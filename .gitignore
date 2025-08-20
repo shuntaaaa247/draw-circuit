@@ -1,0 +1,27 @@
+# 環境変数ファイル
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Docker関連
+.dockerignore
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# エディタ関連
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ログファイル
+*.log
+
+# 一時ファイル
+tmp/
+temp/ 
