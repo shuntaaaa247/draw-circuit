@@ -3,6 +3,12 @@ require "active_support/core_ext/integer/time"
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
+  # 開発環境でホストの承認を許可
+  config.hosts << "backend"
+  config.hosts << "backend:4000" # バックエンド自身がbackend:4000というホスト名で表されることを許可（フロントエンドからhttp://backend:4000でアクセスできるようにしている）
+  config.hosts << "localhost"
+  config.hosts << "localhost:4000"
+
   # In the development environment your application's code is reloaded any time
   # it changes. This slows down response time but is perfect for development
   # since you don't have to restart the web server when you make code changes.
