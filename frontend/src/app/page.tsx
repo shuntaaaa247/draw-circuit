@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { Project } from '@/types';
 import ProjectList from '@/components/home/ProjectList';
 
@@ -10,7 +9,7 @@ async function getProjects(): Promise<Project[]> {
     
     const response = await fetch(`${apiBaseUrl}/api/v1/projects`, {
       headers: {
-        'Authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTU3NzgzNjh9.ivR2hxQ3IQmDvQ1e_bfOyEJ48mHeA3y0tQ4HrLfuvc8"
+        'Authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTYwMDg2OTR9.rLf_l9oKs_cUZUkhHP0spq2d1nhWZBFp1LktCT--9P8"
       }
     })
     

@@ -39,13 +39,21 @@ class Api::V1::CircuitElementsController < ApplicationController
     #     element_type: "...",
     #     x_position: "...",
     #     y_position: "...",
+    #     start_x_position: "...",
+    #     start_y_position: "...",
+    #     end_x_position: "...",
+    #     end_y_position: "...",
     #   }
     # }
-    # というJSONが送信された場合、params.require(:circuit_element).permit(:element_type, :x_position, :y_position, :width, :height, :rotation, properties: {})は
+    # というJSONが送信された場合、params.require(:circuit_element).permit(:element_type, :x_position, :y_position, :start_x_position, :start_y_position, :end_x_position, :end_y_position, :width, :height, :rotation, properties: {})は
     # {
     #   element_type: "...",
     #   x_position: "...",
     #   y_position: "...",
+    #   start_x_position: "...",
+    #   start_y_position: "...",
+    #   end_x_position: "...",
+    #   end_y_position: "...",
     #   width: "...",
     #   height: "...",
     #   rotation: "...",
@@ -54,7 +62,7 @@ class Api::V1::CircuitElementsController < ApplicationController
     #   }
     # }
     # というハッシュを返す
-    params.require(:circuit_element).permit(:element_type, :x_position, :y_position, :width, :height, :rotation, properties: {})
+    params.require(:circuit_element).permit(:element_type, :x_position, :y_position, :start_x_position, :start_y_position, :end_x_position, :end_y_position, :width, :height, :rotation, properties: {})
     # properties: {}
     # → properties カラムが ハッシュ型（例えば JSON カラム） であることを想定している
     # → {} を書くことで「中身のキーは制限せずに全部許可する」という意味になる
