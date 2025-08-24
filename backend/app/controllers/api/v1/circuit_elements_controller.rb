@@ -26,6 +26,33 @@ class Api::V1::CircuitElementsController < ApplicationController
     head :no_content # 204 No Contentを表す、ヘッダーのみを返す
   end
 
+  # 最新のcanvasデータを保存する(保存ボタンが押された時に実行される)
+  def save_latest_circuit_elements_data
+    ActiveRecord::Base.transaction do
+      @project.circuit_elements.destroy_all
+      
+      params[:latest_circuit_elements_data].each do |element_data|
+        @project.circuit_elements.create!(
+          element_type: element_data[:element_type],
+          x_position: element_data[:x_position],
+          y_position: element_data[:y_position],
+          start_x_position: element_data[:start_x_position],
+          start_y_position: element_data[:start_y_position],
+          end_x_position: element_data[:end_x_position],
+          end_y_position: element_data[:end_y_position],
+          width: element_data[:width],
+          height: element_data[:height],
+          rotation: element_data[:rotation],
+          properties: element_data[:properties] || {}
+        )
+      end
+    end
+  
+    render json: @project.circuit_elements, status: :ok
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  end
+
   private
 
   def set_project

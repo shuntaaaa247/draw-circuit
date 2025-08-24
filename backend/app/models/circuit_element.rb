@@ -13,7 +13,7 @@ class CircuitElement < ApplicationRecord
   def to_circuit_data
     {
       id: id,
-      type: element_type,
+      element_type: element_type,
       x_position: x_position,
       y_position: y_position,
       width: width,

@@ -7,7 +7,7 @@ type Project = {
 
 type CircuitElement = {
   id: number;
-  type: string;
+  element_type: string;
   x_position?: number;
   y_position?: number;
   width?: number;

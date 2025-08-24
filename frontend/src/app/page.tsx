@@ -9,7 +9,7 @@ async function getProjects(): Promise<Project[]> {
     
     const response = await fetch(`${apiBaseUrl}/api/v1/projects`, {
       headers: {
-        'Authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTYwMDg2OTR9.rLf_l9oKs_cUZUkhHP0spq2d1nhWZBFp1LktCT--9P8"
+        'Authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTYxMTA4OTd9.armj_UqA-XNCudvmwxnHlsxeV76uUIiXtCydUOQPTqc"
       }
     })
     
