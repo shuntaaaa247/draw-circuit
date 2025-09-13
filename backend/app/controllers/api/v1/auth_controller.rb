@@ -13,6 +13,7 @@ class Api::V1::AuthController < ApplicationController
 
   def login
     user = User.find_by(email: params[:email])
+    p "params: #{params}"
     p "user: #{user}"
     p "params[:email]: #{params[:email]}"
     if user&.authenticate(params[:password]) # ぼっち演算子(x&.y)は、xがnilでない場合にのみメソッドyを呼び出し、xがnilの場合はnilを返す

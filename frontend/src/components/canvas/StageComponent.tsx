@@ -326,16 +326,14 @@ export default function StageComponent({ project }: { project: Project }) {
     console.log("latestCircuitElementsData:", latestCircuitElementsData)
     
     try {
-      // 
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
-        const response = await fetch(`http://localhost:4000/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
+      const response = await fetch(`http://localhost:4000/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTYxMTA4OTd9.armj_UqA-XNCudvmwxnHlsxeV76uUIiXtCydUOQPTqc",
+          // "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTYxMTA4OTd9.armj_UqA-XNCudvmwxnHlsxeV76uUIiXtCydUOQPTqc",
         },
-    
         body: JSON.stringify({ latest_circuit_elements_data: latestCircuitElementsData }),
+        credentials: 'include',
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -357,14 +355,14 @@ export default function StageComponent({ project }: { project: Project }) {
         <button onClick={() => addCapacitor()}>Add Capacitor</button>
         <button onClick={() => addInductor()}>Add Inductor</button>
         <button onClick={rotateSelectedElement}>Rotate Selected</button>
-        {/* <p>lines.x:{lines[0]?.x()}</p>
+        <p>lines.x:{lines[0]?.x()}</p>
         <p>lines.y:{lines[0]?.y()}</p>
         <p>lines[0]?.points()[0]:{lines[0]?.points()[0]}</p>
         <p>lines[0]?.points()[1]:{lines[0]?.points()[1]}</p>
         <p>lines[0]?.points()[2]:{lines[0]?.points()[2]}</p>
         <p>lines[0]?.points()[3]:{lines[0]?.points()[3]}</p>
         <p>pointerPosition.x:{pointerPosition.x}</p>
-        <p>pointerPosition.y:{pointerPosition.y}</p> */}
+        <p>pointerPosition.y:{pointerPosition.y}</p>
         {/* {resistances.map((resistance) => (
           <p key={resistance.id()}>・{JSON.stringify(resistance)}</p>
         ))}

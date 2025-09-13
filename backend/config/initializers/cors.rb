@@ -12,6 +12,6 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     resource "*", # 全てのリソースを許可する('*' は「すべてのパスを対象にする」という意味。)
       headers: :any, # 全てのヘッダーを許可する
       methods: [:get, :post, :put, :patch, :delete, :options, :head], # 許可するメソッドを設定。API でよく使う CRUD 系 + options（プリフライトリクエスト用）+ head を許可
-      credentials: false # Authorization: Bearer ... ヘッダーでトークンを送信する場合はfalseで良い
+      credentials: true # Cookieの送信を許可する
   end
 end
