@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_08_18_170405) do
+ActiveRecord::Schema[7.1].define(version: 2025_08_21_155838) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -25,6 +25,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_08_18_170405) do
     t.jsonb "properties", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "start_x_position", precision: 10, scale: 2
+    t.decimal "start_y_position", precision: 10, scale: 2
+    t.decimal "end_x_position", precision: 10, scale: 2
+    t.decimal "end_y_position", precision: 10, scale: 2
     t.index ["element_type"], name: "index_circuit_elements_on_element_type"
     t.index ["project_id"], name: "index_circuit_elements_on_project_id"
     t.index ["properties"], name: "index_circuit_elements_on_properties", using: :gin

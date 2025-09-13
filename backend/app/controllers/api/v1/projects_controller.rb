@@ -4,7 +4,6 @@ class Api::V1::ProjectsController < ApplicationController
 
   def index
     projects = current_user.projects # current_userはApplicationControllerのメソッド
-
     # projects.map(&:circuit_data)はprojects.map { |project| project.circuit_data }と同じ意味
     render json: projects.map(&:circuit_data) # circuit_dataはProjectモデルのメソッド projectが1件の場合は{...}で、複数件の場合は[{...}, {...}, ...]で返される
   end

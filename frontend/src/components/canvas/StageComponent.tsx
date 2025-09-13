@@ -8,20 +8,74 @@ import DCPowerSupplyComponent from "./DCPowerSupplyComponent";
 import CapacitorComponent from "./CapacitorComponent";
 import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
+import { Project, CircuitElement } from "@/types";
 
-export default function StageComponent() {
+export default function StageComponent({ project }: { project: Project }) {
   const [resistanceCounter, setResistanceCounter] = useState(0);
   const [dcPowerSupplyCounter, setDcPowerSupplyCounter] = useState(0);
   const [capacitorCounter, setCapacitorCounter] = useState(0);
   const [inductorCounter, setInductorCounter] = useState(0);
+  const [lineCounter, setLineCounter] = useState(0);
   const [resistances, setResistances] = useState<Konva.Rect[]>([]);
   const [dcPowerSupplies, setDcPowerSupplies] = useState<Konva.Group[]>([]);
   const [capacitors, setCapacitors] = useState<Konva.Group[]>([]);
   const [inductors, setInductors] = useState<Konva.Group[]>([]);
   const [lines, setLines] = useState<Konva.Line[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
   const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+
+  useEffect(() => {
+    console.log("project.circuit_elements:", project.circuit_elements)
+    
+    // 既存の要素をクリア
+    setResistances([]);
+    setLines([]);
+    setDcPowerSupplies([]);
+    setCapacitors([]);
+    setInductors([]);
+    
+    // カウンターをリセット
+    setResistanceCounter(0);
+    setLineCounter(0);
+    setDcPowerSupplyCounter(0);
+    setCapacitorCounter(0);
+    setInductorCounter(0);
+
+    let _resistanceCounter = 0;
+    let _lineCounter = 0;
+    let _dcPowerSupplyCounter = 0;
+    let _capacitorCounter = 0;
+    let _inductorCounter = 0;
+    
+    project.circuit_elements.forEach((element: CircuitElement) => {
+      if (element.element_type === "resistance") {
+        _resistanceCounter++
+        addResistance(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_resistanceCounter}-loaded`)
+      } 
+      else if (element.element_type === "line") {
+        _lineCounter++
+        addLine(Number(element.x_position), Number(element.y_position), Number(element.start_x_position), Number(element.start_y_position), Number(element.end_x_position), Number(element.end_y_position), `${_lineCounter}-loaded`)
+      } else if (element.element_type === "dc_power_supply") {
+        _dcPowerSupplyCounter++
+        addDCPowerSupply(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_dcPowerSupplyCounter}-loaded`)
+      } else if (element.element_type === "capacitor") {
+        _capacitorCounter++
+        addCapacitor(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_capacitorCounter}-loaded`)
+      } else if (element.element_type === "inductor") {
+        _inductorCounter++
+        addInductor(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_inductorCounter}-loaded`)
+      }
+    })
+    
+    // カウンターを最大ID + 1に設定
+    setResistanceCounter(_resistanceCounter);
+    setLineCounter(_lineCounter);
+    setDcPowerSupplyCounter(_dcPowerSupplyCounter);
+    setCapacitorCounter(_capacitorCounter);
+    setInductorCounter(_inductorCounter);
+    
+    // isInitialized = true;
+  }, [])
 
   // キーを押した時の処理
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -46,70 +100,95 @@ export default function StageComponent() {
     };
   }, [handleKeyDown]);
 
-  const addResistance = () => {
+  const addResistance = (x?: number, y?: number, rotation?: number, id?: string) => { // idはデータベースのidで初期ロードでデータベース上の素子を描画するときはこのidを使用する
+    // 新しく追加する要素の場合は、カウンターを先にインクリメント
+    if (!id) {
+      setResistanceCounter(prevResistanceCounter => prevResistanceCounter + 1);
+    }
+    
     const resistance = new Konva.Rect({
-      x: 100 + resistanceCounter * 10, // 重ならないように少しずらす
-      y: 100 + resistanceCounter * 10, // 中心座標に調整（y + height/2）
+      x: x && y ? x : 100 + resistanceCounter * 10, // 重ならないように少しずらす
+      y: y && y ? y : 100 + resistanceCounter * 10, // 中心座標に調整（y + height/2）
       width: 70,
       height: 25,  
-      id: `resistance${resistanceCounter + 1}`,
-      rotation: 0, // 回転角度を初期化
+      id: `resistance-${id ? id : resistanceCounter + 1}`,
+      rotation: rotation ? rotation : 0, // 回転角度を初期化
     });
-    setResistances([...resistances, resistance]);
-    setResistanceCounter(resistanceCounter + 1);
+    setResistances(prevResistances => [...prevResistances, resistance]);
   }
 
-  const addLine = () => {
-    const startPointX = 0 + lines.length * 100;
-    const startPointY = 100 + lines.length * 100;
-    const endPointX = startPointX + 100;
-    const endPointY = startPointY;
+  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string) => {
+    // 新しく追加する要素の場合は、カウンターを先にインクリメント
+    if (!id) {
+      setLineCounter(prevLineCounter => prevLineCounter + 1);
+    }
+    
+    const startPointX = startXPosition && startYPosition && endXPosition && endYPosition ? startXPosition : 0 + lines.length * 10;
+    const startPointY = startXPosition && startYPosition && endXPosition && endYPosition ? startYPosition : 100 + lines.length * 10;
+    const endPointX = startXPosition && startYPosition && endXPosition && endYPosition ? endXPosition : startPointX + 100;
+    const endPointY = startXPosition && startYPosition && endXPosition && endYPosition ? endYPosition : startPointY;
     
     const line = new Konva.Line({
-      points: [startPointX, startPointY, endPointX, endPointY],
-      id: `line${lines.length + 1}`,
+      points: [startPointX + (x ? x : 0), startPointY + (y ? y : 0), endPointX + (x ? x : 0), endPointY + (y ? y : 0)],
+      id: `line-${id ? id : lineCounter + 1}`,
       rotation: 0,
     });
-    setLines([...lines, line]);
+    setLines(prevLines => [...prevLines, line]);
+    // setLineCounter(prevLineCounter => prevLineCounter + 1);
   }
 
-  const addDCPowerSupply = () => {
+  const addDCPowerSupply = (x?: number, y?: number, rotation?: number, id?: string) => {
+    if (!id) {
+      setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
+    }
+    
+    setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
+    
     const dcPowerSupply = new Konva.Group({
-      x: 150 + dcPowerSupplyCounter * 10, // 重ならないように少しずらす
-      y: 150 + dcPowerSupplyCounter * 10,
+      x: x && y ? x : 150 + dcPowerSupplyCounter * 10, // 重ならないように少しずらす
+      y: y && y ? y : 150 + dcPowerSupplyCounter * 10,
       width: 60,
       height: 60,
-      rotation: 0,
-      id: `dcPowerSupply${dcPowerSupplyCounter + 1}`,
+      rotation: rotation ? rotation : 0,
+      id: `dcPowerSupply-${id ? id : dcPowerSupplyCounter + 1}`,
     });
     setDcPowerSupplies([...dcPowerSupplies, dcPowerSupply]);
-    setDcPowerSupplyCounter(dcPowerSupplyCounter + 1);
   }
 
-  const addCapacitor = () => {
+  const addCapacitor = (x?: number, y?: number, rotation?: number, id?: string) => {
+    if (!id) {
+      setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
+    }
+    
+    setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
+    
     const capacitor = new Konva.Group({
-      x: 200 + capacitorCounter * 10, // 重ならないように少しずらす
-      y: 200 + capacitorCounter * 10,
+      x: x && y ? x : 200 + capacitorCounter * 10, // 重ならないように少しずらす
+      y: y && y ? y : 200 + capacitorCounter * 10,
       width: 60,
       height: 60,
-      rotation: 0,
-      id: `capacitor${capacitorCounter + 1}`,
+      rotation: rotation ? rotation : 0,
+      id: `capacitor-${id ? id : capacitorCounter + 1}`,
     });
     setCapacitors([...capacitors, capacitor]);
-    setCapacitorCounter(capacitorCounter + 1);
   }
 
-  const addInductor = () => {
+  const addInductor = (x?: number, y?: number, rotation?: number, id?: string) => {
+    if (!id) {
+      setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
+    }
+    
+    setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
+    
     const inductor = new Konva.Group({
-      x: 250 + inductorCounter * 10, // 重ならないように少しずらす
-      y: 250 + inductorCounter * 10,
+      x: x && y ? x : 250 + inductorCounter * 10, // 重ならないように少しずらす
+      y: y && y ? y : 250 + inductorCounter * 10,
       width: 86.4, // 20%拡大: 72 * 1.2
       height: 72,  // 20%拡大: 60 * 1.2
-      rotation: 0,
-      id: `inductor${inductorCounter + 1}`,
+      rotation: rotation ? rotation : 0,
+      id: `inductor-${id ? id : inductorCounter + 1}`,
     });
     setInductors([...inductors, inductor]);
-    setInductorCounter(inductorCounter + 1);
   }
 
   const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
@@ -165,6 +244,9 @@ export default function StageComponent() {
   }
 
   const handleElementDragMove = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
+    
+    console.log("lines:", lines)
+
     const draggedElement = event.target;
     
     // 全ての要素配列を統合して、ドラッグされた要素を見つける
@@ -188,8 +270,14 @@ export default function StageComponent() {
 
     // 他の選択された要素も同じ量だけ移動
     elementsToMove.forEach((element) => {
-      element.x(element.x() + deltaX);
-      element.y(element.y() + deltaY);
+      // element.x(element.x() + deltaX);
+      // element.y(element.y() + deltaY);
+      if (element instanceof Konva.Line) {
+        element.points([element.points()[0] + deltaX, element.points()[1] + deltaY, element.points()[2] + deltaX, element.points()[3] + deltaY]);
+      } else {
+        element.x(element.x() + deltaX);
+        element.y(element.y() + deltaY);
+      }
     });
 
     // 各要素タイプの状態を更新
@@ -209,14 +297,63 @@ export default function StageComponent() {
     }
   }
 
+  const handleSaveClick = async () => {
+    console.log("resistances:", resistances)
+    console.log("lines:", lines)
+    console.log("dcPowerSupplies:", dcPowerSupplies)
+    console.log("capacitors:", capacitors)
+    console.log("inductors:", inductors)
+
+    const elements = [...resistances, ...lines, ...dcPowerSupplies, ...capacitors, ...inductors]
+    const latestCircuitElementsData = elements.map((element) => {
+      let elementType = element.id().split("-")[0]
+      if (elementType === "dcPowerSupply") {
+        elementType = "dc_power_supply"
+      }
+      return {
+        element_type: elementType,
+        x_position: element.attrs.x,
+        y_position: element.attrs.y,
+        start_x_position: elementType === "line" ? element.attrs.points[0] : null,
+        start_y_position: elementType === "line" ? element.attrs.points[1] : null,
+        end_x_position: elementType === "line" ? element.attrs.points[2] : null,
+        end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        width: element.width(),
+        height: element.height(),
+        rotation: element.rotation(),
+      }
+    })
+    console.log("latestCircuitElementsData:", latestCircuitElementsData)
+    
+    try {
+      const response = await fetch(`http://localhost:4000/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTYxMTA4OTd9.armj_UqA-XNCudvmwxnHlsxeV76uUIiXtCydUOQPTqc",
+        },
+        body: JSON.stringify({ latest_circuit_elements_data: latestCircuitElementsData }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("data:", data);
+    } catch (error) {
+      console.error("Error saving latest circuit elements data:", error);
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-col bg-gray-200 p-2 w-[10%]">
-        <button onClick={addResistance}>Add Resistance</button>
-        <button onClick={addLine}>Add Line</button>
-        <button onClick={addDCPowerSupply}>Add DC Power Supply</button>
-        <button onClick={addCapacitor}>Add Capacitor</button>
-        <button onClick={addInductor}>Add Inductor</button>
+        <p>project.name:{project.name}</p>
+        <button onClick={() => addResistance()}>Add Resistance</button>
+        <button onClick={() => addLine()}>Add Line</button>
+        <button onClick={() => addDCPowerSupply()}>Add DC Power Supply</button>
+        <button onClick={() => addCapacitor()}>Add Capacitor</button>
+        <button onClick={() => addInductor()}>Add Inductor</button>
         <button onClick={rotateSelectedElement}>Rotate Selected</button>
         <p>lines.x:{lines[0]?.x()}</p>
         <p>lines.y:{lines[0]?.y()}</p>
@@ -226,6 +363,14 @@ export default function StageComponent() {
         <p>lines[0]?.points()[3]:{lines[0]?.points()[3]}</p>
         <p>pointerPosition.x:{pointerPosition.x}</p>
         <p>pointerPosition.y:{pointerPosition.y}</p>
+        {/* {resistances.map((resistance) => (
+          <p key={resistance.id()}>・{JSON.stringify(resistance)}</p>
+        ))}
+        {lines.map((line) => (
+          <p key={line.id()}>・{JSON.stringify(line)}</p>
+        ))} */}
+        {/* <p>lines:{JSON.stringify(lines)}</p> */}
+        <button className="cursor-pointer" onClick={handleSaveClick}>Save</button>
       </div>
       <div style={{ position: 'relative' }}>
         <Stage width={window.innerWidth} height={window.innerHeight} onClick={handleStageClick}>
@@ -249,6 +394,7 @@ export default function StageComponent() {
                 onDragStart={handleDragStart}
                 onDragMove={handleElementDragMove}
                 onLineResize={handleLineResize}
+                numOfSelectedIds={selectedIds.length}
               />
             ))}
             {dcPowerSupplies.map((dcPowerSupply) => (
@@ -285,7 +431,8 @@ export default function StageComponent() {
         </Stage>
         
         {/* 選択された要素が1つの場合に回転ボタンを表示 */}
-        {selectedIds.length === 1 && (() => {
+        {/* {selectedIds.length === 1 && (() => { */}
+        {selectedIds.length === 1 && !selectedIds[0].includes("line") && (() => {
           const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
           const selectedElement = allElements.find((element) => element.id() === selectedIds[0]);
           if (selectedElement) {

@@ -25,6 +25,8 @@ Rails.application.routes.draw do
         # DELETE /api/v1/projects/:project_id/circuit_elements/:id → api/v1/circuit_elements_controller.rbのdestroyアクション
       end
 
+      post "projects/:project_id/save_latest_circuit_elements_data", to: "circuit_elements#save_latest_circuit_elements_data"
+
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
