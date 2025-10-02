@@ -23,7 +23,8 @@ export default function StageComponent({ project }: { project: Project }) {
   const [inductors, setInductors] = useState<Konva.Group[]>([]);
   const [lines, setLines] = useState<Konva.Line[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0}); 
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     console.log("project.circuit_elements:", project.circuit_elements)
@@ -80,7 +81,7 @@ export default function StageComponent({ project }: { project: Project }) {
 
   // キーを押した時の処理
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    console.log(e.key);
+    // バックスペースが押された場合は、選択された要素を削除
     if (e.key === "Backspace") {
       // 選択された要素を各配列から削除
       setResistances(prevResistances => prevResistances.filter((resistance) => !selectedIds.includes(resistance.id())));
@@ -89,6 +90,12 @@ export default function StageComponent({ project }: { project: Project }) {
       setInductors(prevInductors => prevInductors.filter((inductor) => !selectedIds.includes(inductor.id())));
       setLines(prevLines => prevLines.filter((line) => !selectedIds.includes(line.id())));
       setSelectedIds([]);
+    }
+
+    // Ctrl/Command + Sが押された場合は、保存処理を行う
+    if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSaveClick();
     }
   }, [selectedIds]);
 
@@ -303,6 +310,7 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const handleSaveClick = async () => {
+    setIsSaving(true);
     console.log("resistances:", resistances)
     console.log("lines:", lines)
     console.log("dcPowerSupplies:", dcPowerSupplies)
@@ -348,6 +356,7 @@ export default function StageComponent({ project }: { project: Project }) {
     } catch (error) {
       console.error("Error saving latest circuit elements data:", error);
     }
+    setIsSaving(false);
   }
 
   return (
@@ -360,7 +369,9 @@ export default function StageComponent({ project }: { project: Project }) {
         <button onClick={() => addDCPowerSupply()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">DC電源を追加</button>
         <button onClick={() => addCapacitor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">コンデンサを追加</button>
         <button onClick={() => addInductor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">インダクタを追加</button>
-        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick}>保存</button>
+        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick} disabled={isSaving}>
+          {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
+        </button>
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
