@@ -350,39 +350,19 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   return (
-    <div>
-      <div className="flex flex-col bg-gray-200 p-2 w-[10%]">
-        <p>project.name:{project.name}</p>
-        <button onClick={() => addResistance()}>Add Resistance</button>
-        <button onClick={() => addLine()}>Add Line</button>
-        <button onClick={() => addDCPowerSupply()}>Add DC Power Supply</button>
-        <button onClick={() => addCapacitor()}>Add Capacitor</button>
-        <button onClick={() => addInductor()}>Add Inductor</button>
-        <button onClick={rotateSelectedElement}>Rotate Selected</button>
-        {/* <p>lines.x:{lines[0]?.x()}</p>
-        <p>lines.y:{lines[0]?.y()}</p>
-        <p>lines[0]?.points()[0]:{lines[0]?.points()[0]}</p>
-        <p>lines[0]?.points()[1]:{lines[0]?.points()[1]}</p>
-        <p>lines[0]?.points()[2]:{lines[0]?.points()[2]}</p>
-        <p>lines[0]?.points()[3]:{lines[0]?.points()[3]}</p>
-        <p>pointerPosition.x:{pointerPosition.x}</p>
-        <p>pointerPosition.y:{pointerPosition.y}</p> */}
-        <p>resistances:{resistances.length}</p>
-        <p>lines:{lines.length}</p>
-        <p>dcPowerSupplies:{dcPowerSupplies.length}</p>
-        <p>capacitors:{capacitors.length}</p>
-        <p>inductors:{inductors.length}</p>
-        {/* {resistances.map((resistance) => (
-          <p key={resistance.id()}>・{JSON.stringify(resistance)}</p>
-        ))}
-        {lines.map((line) => (
-          <p key={line.id()}>・{JSON.stringify(line)}</p>
-        ))} */}
-        {/* <p>lines:{JSON.stringify(lines)}</p> */}
-        <button className="cursor-pointer" onClick={handleSaveClick}>Save</button>
+    <div className="flex">
+      <div className="flex flex-col bg-gray-200 p-2 w-[15%]">
+        <p className="text-lg font-bold">{project.name}</p>
+        <button onClick={() => addResistance()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">抵抗を追加</button>
+        <button onClick={() => addLine()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">線を追加</button>
+        <button onClick={() => addDCPowerSupply()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">DC電源を追加</button>
+        <button onClick={() => addCapacitor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">コンデンサを追加</button>
+        <button onClick={() => addInductor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">インダクタを追加</button>
+        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md" onClick={handleSaveClick}>保存</button>
       </div>
-      <div style={{ position: 'relative' }}>
-        <Stage width={window.innerWidth} height={window.innerHeight} onClick={handleStageClick}>
+      {/* <div style={{ position: 'relative' }}> */}
+      <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
+        <Stage width={window.innerWidth * 0.85} height={window.innerHeight} onClick={handleStageClick}>
           <Layer>
             {resistances.map((resistance, index) => (
               console.log("レジスタンス:", resistance),
