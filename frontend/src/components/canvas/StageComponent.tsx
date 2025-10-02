@@ -355,12 +355,12 @@ export default function StageComponent({ project }: { project: Project }) {
       <div className="flex flex-col bg-gray-200 p-2 w-[15%]">
         <Link href="/" className="text-lg text-center mb-4">Draw Circuit</Link>
         <p className="text-lg font-bold">{project.name}</p>
-        <button onClick={() => addResistance()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">抵抗を追加</button>
-        <button onClick={() => addLine()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">線を追加</button>
-        <button onClick={() => addDCPowerSupply()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">DC電源を追加</button>
-        <button onClick={() => addCapacitor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">コンデンサを追加</button>
-        <button onClick={() => addInductor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">インダクタを追加</button>
-        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md" onClick={handleSaveClick}>保存</button>
+        <button onClick={() => addResistance()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">抵抗を追加</button>
+        <button onClick={() => addLine()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">線を追加</button>
+        <button onClick={() => addDCPowerSupply()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">DC電源を追加</button>
+        <button onClick={() => addCapacitor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">コンデンサを追加</button>
+        <button onClick={() => addInductor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">インダクタを追加</button>
+        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick}>保存</button>
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
