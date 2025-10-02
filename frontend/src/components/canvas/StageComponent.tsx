@@ -101,11 +101,11 @@ export default function StageComponent({ project }: { project: Project }) {
   }, [handleKeyDown]);
 
   const addResistance = (x?: number, y?: number, rotation?: number, id?: string) => { // idはデータベースのidで初期ロードでデータベース上の素子を描画するときはこのidを使用する
+    console.log("レジスタンスを追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
       setResistanceCounter(prevResistanceCounter => prevResistanceCounter + 1);
     }
-    
     const resistance = new Konva.Rect({
       x: x && y ? x : 100 + resistanceCounter * 10, // 重ならないように少しずらす
       y: y && y ? y : 100 + resistanceCounter * 10, // 中心座標に調整（y + height/2）
@@ -118,6 +118,7 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string) => {
+    console.log("線を追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
       setLineCounter(prevLineCounter => prevLineCounter + 1);
@@ -138,11 +139,12 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const addDCPowerSupply = (x?: number, y?: number, rotation?: number, id?: string) => {
+    console.log("DC電源を追加します")
     if (!id) {
       setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
     }
     
-    setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
+    // setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
     
     const dcPowerSupply = new Konva.Group({
       x: x && y ? x : 150 + dcPowerSupplyCounter * 10, // 重ならないように少しずらす
@@ -152,15 +154,16 @@ export default function StageComponent({ project }: { project: Project }) {
       rotation: rotation ? rotation : 0,
       id: `dcPowerSupply-${id ? id : dcPowerSupplyCounter + 1}`,
     });
-    setDcPowerSupplies([...dcPowerSupplies, dcPowerSupply]);
+    setDcPowerSupplies(prevDcPowerSupplies => [...prevDcPowerSupplies, dcPowerSupply]);
   }
 
   const addCapacitor = (x?: number, y?: number, rotation?: number, id?: string) => {
+    console.log("コンデンサを追加します")
     if (!id) {
       setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
     }
     
-    setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
+    // setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
     
     const capacitor = new Konva.Group({
       x: x && y ? x : 200 + capacitorCounter * 10, // 重ならないように少しずらす
@@ -170,15 +173,16 @@ export default function StageComponent({ project }: { project: Project }) {
       rotation: rotation ? rotation : 0,
       id: `capacitor-${id ? id : capacitorCounter + 1}`,
     });
-    setCapacitors([...capacitors, capacitor]);
+    setCapacitors(prevCapacitors => [...prevCapacitors, capacitor]);
   }
 
   const addInductor = (x?: number, y?: number, rotation?: number, id?: string) => {
+    console.log("インダクタを追加します")
     if (!id) {
       setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
     }
     
-    setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
+    // setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
     
     const inductor = new Konva.Group({
       x: x && y ? x : 250 + inductorCounter * 10, // 重ならないように少しずらす
@@ -188,7 +192,7 @@ export default function StageComponent({ project }: { project: Project }) {
       rotation: rotation ? rotation : 0,
       id: `inductor-${id ? id : inductorCounter + 1}`,
     });
-    setInductors([...inductors, inductor]);
+    setInductors(prevInductors => [...prevInductors, inductor]);
   }
 
   const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
@@ -355,14 +359,19 @@ export default function StageComponent({ project }: { project: Project }) {
         <button onClick={() => addCapacitor()}>Add Capacitor</button>
         <button onClick={() => addInductor()}>Add Inductor</button>
         <button onClick={rotateSelectedElement}>Rotate Selected</button>
-        <p>lines.x:{lines[0]?.x()}</p>
+        {/* <p>lines.x:{lines[0]?.x()}</p>
         <p>lines.y:{lines[0]?.y()}</p>
         <p>lines[0]?.points()[0]:{lines[0]?.points()[0]}</p>
         <p>lines[0]?.points()[1]:{lines[0]?.points()[1]}</p>
         <p>lines[0]?.points()[2]:{lines[0]?.points()[2]}</p>
         <p>lines[0]?.points()[3]:{lines[0]?.points()[3]}</p>
         <p>pointerPosition.x:{pointerPosition.x}</p>
-        <p>pointerPosition.y:{pointerPosition.y}</p>
+        <p>pointerPosition.y:{pointerPosition.y}</p> */}
+        <p>resistances:{resistances.length}</p>
+        <p>lines:{lines.length}</p>
+        <p>dcPowerSupplies:{dcPowerSupplies.length}</p>
+        <p>capacitors:{capacitors.length}</p>
+        <p>inductors:{inductors.length}</p>
         {/* {resistances.map((resistance) => (
           <p key={resistance.id()}>・{JSON.stringify(resistance)}</p>
         ))}
@@ -376,6 +385,7 @@ export default function StageComponent({ project }: { project: Project }) {
         <Stage width={window.innerWidth} height={window.innerHeight} onClick={handleStageClick}>
           <Layer>
             {resistances.map((resistance, index) => (
+              console.log("レジスタンス:", resistance),
               <ResistanceComponent 
                 key={resistance.id()} 
                 rect={resistance} 
@@ -386,6 +396,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {lines.map((line) => (
+              console.log("線:", line),
               <LineComponent
                 key={line.id()}
                 line={line}
@@ -398,6 +409,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {dcPowerSupplies.map((dcPowerSupply) => (
+              console.log("DC電源:", dcPowerSupply),
               <DCPowerSupplyComponent 
                 key={dcPowerSupply.id()}
                 group={dcPowerSupply}
@@ -408,6 +420,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {capacitors.map((capacitor) => (
+              console.log("コンデンサ:", capacitor),
               <CapacitorComponent
                 key={capacitor.id()}
                 group={capacitor}
@@ -418,6 +431,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {inductors.map((inductor) => (
+              console.log("インダクタ:", inductor),
               <InductorComponent
                 key={inductor.id()}
                 group={inductor}
