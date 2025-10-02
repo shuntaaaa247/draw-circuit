@@ -1,5 +1,6 @@
 'use client'
 
+import Link from "next/link";
 import Konva from "konva";
 import { Stage, Layer, Line } from "react-konva";
 import { useEffect, useState, useCallback } from "react"; 
@@ -352,6 +353,7 @@ export default function StageComponent({ project }: { project: Project }) {
   return (
     <div className="flex">
       <div className="flex flex-col bg-gray-200 p-2 w-[15%]">
+        <Link href="/" className="text-lg text-center mb-4">Draw Circuit</Link>
         <p className="text-lg font-bold">{project.name}</p>
         <button onClick={() => addResistance()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">抵抗を追加</button>
         <button onClick={() => addLine()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md">線を追加</button>
