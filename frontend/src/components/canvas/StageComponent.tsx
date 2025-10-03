@@ -1,5 +1,6 @@
 'use client'
 
+import Link from "next/link";
 import Konva from "konva";
 import { Stage, Layer, Line } from "react-konva";
 import { useEffect, useState, useCallback } from "react"; 
@@ -22,7 +23,8 @@ export default function StageComponent({ project }: { project: Project }) {
   const [inductors, setInductors] = useState<Konva.Group[]>([]);
   const [lines, setLines] = useState<Konva.Line[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0}); 
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     console.log("project.circuit_elements:", project.circuit_elements)
@@ -79,7 +81,7 @@ export default function StageComponent({ project }: { project: Project }) {
 
   // キーを押した時の処理
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    console.log(e.key);
+    // バックスペースが押された場合は、選択された要素を削除
     if (e.key === "Backspace") {
       // 選択された要素を各配列から削除
       setResistances(prevResistances => prevResistances.filter((resistance) => !selectedIds.includes(resistance.id())));
@@ -88,6 +90,12 @@ export default function StageComponent({ project }: { project: Project }) {
       setInductors(prevInductors => prevInductors.filter((inductor) => !selectedIds.includes(inductor.id())));
       setLines(prevLines => prevLines.filter((line) => !selectedIds.includes(line.id())));
       setSelectedIds([]);
+    }
+
+    // Ctrl/Command + Sが押された場合は、保存処理を行う
+    if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleSaveClick();
     }
   }, [selectedIds]);
 
@@ -302,6 +310,7 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const handleSaveClick = async () => {
+    setIsSaving(true);
     console.log("resistances:", resistances)
     console.log("lines:", lines)
     console.log("dcPowerSupplies:", dcPowerSupplies)
@@ -347,42 +356,26 @@ export default function StageComponent({ project }: { project: Project }) {
     } catch (error) {
       console.error("Error saving latest circuit elements data:", error);
     }
+    setIsSaving(false);
   }
 
   return (
-    <div>
-      <div className="flex flex-col bg-gray-200 p-2 w-[10%]">
-        <p>project.name:{project.name}</p>
-        <button onClick={() => addResistance()}>Add Resistance</button>
-        <button onClick={() => addLine()}>Add Line</button>
-        <button onClick={() => addDCPowerSupply()}>Add DC Power Supply</button>
-        <button onClick={() => addCapacitor()}>Add Capacitor</button>
-        <button onClick={() => addInductor()}>Add Inductor</button>
-        <button onClick={rotateSelectedElement}>Rotate Selected</button>
-        {/* <p>lines.x:{lines[0]?.x()}</p>
-        <p>lines.y:{lines[0]?.y()}</p>
-        <p>lines[0]?.points()[0]:{lines[0]?.points()[0]}</p>
-        <p>lines[0]?.points()[1]:{lines[0]?.points()[1]}</p>
-        <p>lines[0]?.points()[2]:{lines[0]?.points()[2]}</p>
-        <p>lines[0]?.points()[3]:{lines[0]?.points()[3]}</p>
-        <p>pointerPosition.x:{pointerPosition.x}</p>
-        <p>pointerPosition.y:{pointerPosition.y}</p> */}
-        <p>resistances:{resistances.length}</p>
-        <p>lines:{lines.length}</p>
-        <p>dcPowerSupplies:{dcPowerSupplies.length}</p>
-        <p>capacitors:{capacitors.length}</p>
-        <p>inductors:{inductors.length}</p>
-        {/* {resistances.map((resistance) => (
-          <p key={resistance.id()}>・{JSON.stringify(resistance)}</p>
-        ))}
-        {lines.map((line) => (
-          <p key={line.id()}>・{JSON.stringify(line)}</p>
-        ))} */}
-        {/* <p>lines:{JSON.stringify(lines)}</p> */}
-        <button className="cursor-pointer" onClick={handleSaveClick}>Save</button>
+    <div className="flex">
+      <div className="flex flex-col bg-gray-200 p-2 w-[15%]">
+        <Link href="/" className="text-lg text-center mb-4">Draw Circuit</Link>
+        <p className="text-lg font-bold">{project.name}</p>
+        <button onClick={() => addResistance()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">抵抗を追加</button>
+        <button onClick={() => addLine()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">線を追加</button>
+        <button onClick={() => addDCPowerSupply()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">DC電源を追加</button>
+        <button onClick={() => addCapacitor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">コンデンサを追加</button>
+        <button onClick={() => addInductor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">インダクタを追加</button>
+        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick} disabled={isSaving}>
+          {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
+        </button>
       </div>
-      <div style={{ position: 'relative' }}>
-        <Stage width={window.innerWidth} height={window.innerHeight} onClick={handleStageClick}>
+      {/* <div style={{ position: 'relative' }}> */}
+      <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
+        <Stage width={window.innerWidth * 0.85} height={window.innerHeight} onClick={handleStageClick}>
           <Layer>
             {resistances.map((resistance, index) => (
               console.log("レジスタンス:", resistance),
