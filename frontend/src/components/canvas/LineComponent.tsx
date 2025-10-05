@@ -10,6 +10,7 @@ interface LineComponentProps {
   onDragStart: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragMove: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onLineResize: (event: Konva.KonvaEventObject<MouseEvent>, id: string, newPoints?: number[], newX?: number, newY?: number, newLength?: number) => void;
+  numOfSelectedIds: number;
 }
 
 export default function LineComponent({ 
@@ -18,7 +19,8 @@ export default function LineComponent({
   onLineClick, 
   onDragStart,
   onDragMove,
-  onLineResize
+  onLineResize,
+  numOfSelectedIds
 }: LineComponentProps) {
 
   const handleMouseEnter = () => {
@@ -31,8 +33,6 @@ export default function LineComponent({
 
   // Lineの中心座標を計算
   const points = line.points(); // Lineの座標[x1, y1, x2, y2] Line.x(),Line.y()からの相対座標 Lineのベクトルが変わらなければこの値は変わらない
-  const centerX = (points[0] + points[2]) / 2; // x1 + x2 / 2 // 仮
-  const centerY = (points[1] + points[3]) / 2; // y1 + y2 / 2  //　仮
 
   // 制御点のドラッグハンドラ
   const handleControlPointDrag = (pointIndex: number, event: Konva.KonvaEventObject<MouseEvent>) => {
@@ -57,29 +57,16 @@ export default function LineComponent({
         stroke={isSelected ? "red" : "black"}
         strokeWidth={isSelected ? 3 : 2}
         hitStrokeWidth={15} // クリック領域を15pxに拡張
-        // draggable={true}
         onClick={(event) => onLineClick(line.id(), event)}
-        // onDragStart={(event) => onDragStart(line.id(), event)}
-        // onDragMove={(event) => onDragMove(line.id(), event)}
-        // x={line.points()[0]}
-        // y={line.points()[1]}
         rotation={line.rotation()}
-        // offsetX={centerX}
-        // offsetY={centerY}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       />
       
-      {isSelected && (
+      {isSelected && numOfSelectedIds === 1 && (
         <>
           {/* 開始点の制御点 */}
           <Circle
-            // x={line.x() + points[0] - centerX}
-            // y={line.y() + points[1] - centerY}
-
-            // 点をLineの開始点に合わせる
-            // x={line.x() - Math.cos(line.rotation() * Math.PI / 180) * Math.abs((points[2] - points[0])/2)}
-            // y={line.y() - Math.sin(line.rotation() * Math.PI / 180) * Math.abs((points[2] - points[0])/2)}
             x={points[0]}
             y={points[1]}
             radius={6}

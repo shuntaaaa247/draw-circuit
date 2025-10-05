@@ -1,20 +1,28 @@
-import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers'
 import { Project } from '@/types';
 import ProjectList from '@/components/home/ProjectList';
+import CreateProjectButton from '@/components/home/CreateProjectButton';
 
 async function getProjects(): Promise<Project[]> {
   try {
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
-    // const apiBaseUrl = 'http://backend:4000';
     console.log('API Base URL:', apiBaseUrl);
-    
+
+    const cookieStore = await cookies()
+    const token = cookieStore.get('token')?.value
+    console.log('Token:', token);
+
     const response = await fetch(`${apiBaseUrl}/api/v1/projects`, {
       headers: {
-        'Authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3NTU3NzgzNjh9.ivR2hxQ3IQmDvQ1e_bfOyEJ48mHeA3y0tQ4HrLfuvc8"
-      }
+        'Authorization': `Bearer ${token}`
+      },
+      cache: 'no-store',
+      // credentials: 'include'
     })
     
     if (!response.ok) {
+      const resJson = await response.json();
+      console.log('Response JSON:', resJson);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
@@ -30,11 +38,11 @@ async function getProjects(): Promise<Project[]> {
 
 export default async function Home() {
   const projects: Project[] = await getProjects();
-  console.log('Projects:', projects);
-  
-  return (
+
+  return ( 
     <div>
-      <h1>Hello World</h1>
+      <h1>Draw Circuit</h1>
+      <CreateProjectButton />
       <ProjectList projects={projects} />
     </div>
   )

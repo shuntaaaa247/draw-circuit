@@ -4,7 +4,17 @@ class ApplicationController < ActionController::API # ActionControllerモジュ�
   private
 
   def authenticate_user
-    @current_user = User.find_by(decoded_token[:user_id])
+    # ヘッダーの内容を詳しく出力
+    p "=== Request Headers ==="
+    request.headers.each do |key, value|
+      p "#{key}: #{value}"
+    end
+    p "======================="
+    p "request.headers['Cookie']: #{request.headers['Cookie']}"
+    p "=======================decoded_token: #{decoded_token}======================="
+    p "=======================decoded_token[:'user_id']: #{decoded_token['user_id']}======================="
+    @current_user = User.find_by(id: decoded_token['user_id'])
+    p "=======================current_user: #{current_user.inspect}======================="
   rescue JWT::DecodeError, ActiveRecord::RecordNotFound, JWT::ExpiredSignature # rescueはエラーが発生した場合に実行される
     # メソッドの中では、メソッド全体が暗黙的に begin ... end で囲まれているため、begin を省略して rescue だけ書ける
     render json: { error: "Unauthorized" }, status: :unauthorized
@@ -28,8 +38,16 @@ class ApplicationController < ActionController::API # ActionControllerモジュ�
   end
 
   def token
-    request.headers["Authorization"].split(" ").last # HTTPヘッダー Authorization からトークンを取り出す。
+    if request.headers["Authorization"].present?
+      request.headers["Authorization"].split(" ").last
+    elsif request.headers["Cookie"].present?
+      request.headers["Cookie"].split(";").find { |cookie| cookie.include?("token=") }.split("=").last
+    else 
+      nil
+    end
+    # request.headers["Authorization"].split(" ").last # HTTPヘッダー Authorization からトークンを取り出す。
     # Authorization: Bearer <token> という形式でトークンがクライアントから送信されるので、split(" ")でBearerと<token>に分割して、.lastで<token>を取得
     # &. はセーフナビゲーション演算子（nilでもエラーにならずnilを返す）
+    # httpOnlyでtokenをCookieごと送信している場合は、request.headers["Cookie"]ではなく、request.headers["Cookie"].split(";").find { |cookie| cookie.include?("token=") }.split("=").lastでtokenを取得する
   end
 end
