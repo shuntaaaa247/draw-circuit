@@ -65,7 +65,9 @@ export default function CreateProjectModal({ handleCloseModal }: CreateProjectMo
           <div className="mb-4 flex flex-col w-full">
             <input type="text" placeholder="ex. 抵抗とコイルとコンデンサを直列に接続した回路を作成" {...register("description")} className="border border-gray-300 rounded-md p-2 mb-0" />
           </div>
-          <button type="submit" className="bg-blue-500 text-white rounded-md p-2 hover:bg-blue-600 cursor-pointer">Create Project</button>
+          <button type="submit" className={`bg-blue-500 text-white rounded-md p-2 hover:bg-blue-600 cursor-pointer ${isLoading ? "opacity-50 disabled" : ""}`} disabled={isLoading}>
+            {isLoading ? "Loading..." : "Create Project"}
+          </button>
         </form>
       </div>
     </div>
