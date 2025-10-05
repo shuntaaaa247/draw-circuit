@@ -9,7 +9,7 @@ type CreateProjectModalContentProps = {
   handleCloseModal: () => void
 }
 
-const sendCreateProjectRequest = async (data: NewProjectInput): Promise<boolean> => {
+const sendCreateProjectRequest = async (data: NewProjectInput): Promise<{ isSuccess: boolean, rawApiErrorMessage: string | null }> => {
   try {
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
     const response = await fetch(`${apiBaseUrl}/api/v1/projects`, {
@@ -27,26 +27,29 @@ const sendCreateProjectRequest = async (data: NewProjectInput): Promise<boolean>
     })
     if (!response.ok) {
       // throw new Error("Failed to create project")
-      console.error("Failed to create project", response.statusText)
-      return false
+      // console.error("Failed to create project", response.statusText)
+      return { isSuccess: false, rawApiErrorMessage: response.statusText}
     }
-    return true
+    return { isSuccess: true, rawApiErrorMessage: null }
   } catch (error) {
-    console.error("Failed to create project", error)
-    return false
+    // console.error("Failed to create project", error)
+    return { isSuccess: false, rawApiErrorMessage: "プロジェクトの作成に失敗しました" }
   }
 }
 
 export default function CreateProjectModal({ handleCloseModal }: CreateProjectModalContentProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [apiErrorMessage, setApiErrorMessage] = useState("")
   const router = useRouter()
   const { register, handleSubmit, formState: { errors } } = useForm<NewProjectInput>()
   const onSubmit: SubmitHandler<NewProjectInput> = async (data) => {
     console.log(data)
     setIsLoading(true)
-    const isSuccess = await sendCreateProjectRequest(data)
+    const { isSuccess, rawApiErrorMessage  } = await sendCreateProjectRequest(data)
     if (isSuccess) {
       handleCloseModal()
+    } else {
+      setApiErrorMessage(rawApiErrorMessage || "プロジェクトの作成に失敗しました")
     }
     // handleCloseModal()
     setIsLoading(false)
@@ -68,6 +71,7 @@ export default function CreateProjectModal({ handleCloseModal }: CreateProjectMo
           <button type="submit" className={`bg-blue-500 text-white rounded-md p-2 hover:bg-blue-600 cursor-pointer ${isLoading ? "opacity-50 disabled" : ""}`} disabled={isLoading}>
             {isLoading ? "Loading..." : "Create Project"}
           </button>
+          {apiErrorMessage && <p className="text-red-500">{apiErrorMessage}</p>}
         </form>
       </div>
     </div>
