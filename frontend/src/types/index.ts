@@ -5,6 +5,8 @@ type Project = {
   circuit_elements: CircuitElement[];
 }
 
+type NewProjectInput = Omit<Project, "id" | "circuit_elements">
+
 type CircuitElement = {
   id: number;
   element_type: string;
@@ -20,4 +22,4 @@ type CircuitElement = {
   properties?: object;
 }
 
-export type { Project, CircuitElement }
+export type { Project, CircuitElement, NewProjectInput }

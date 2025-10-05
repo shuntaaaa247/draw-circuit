@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { Project } from '@/types';
 import ProjectList from '@/components/home/ProjectList';
+import CreateProjectButton from '@/components/home/CreateProjectButton';
 
 async function getProjects(): Promise<Project[]> {
   try {
@@ -41,6 +42,7 @@ export default async function Home() {
   return ( 
     <div>
       <h1>Draw Circuit</h1>
+      <CreateProjectButton />
       <ProjectList projects={projects} />
     </div>
   )
