@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import CreateProjectModal from "./CreateProjectModal"
+import { useState, useEffect } from "react"
+import CreateProjectModal from "./CreateProjectModalContent"
 
 export default function CreateProjectButton() {
   const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -13,6 +13,20 @@ export default function CreateProjectButton() {
   const handleCloseModal = () => {
     setModalIsOpen(false);
   }
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      handleCloseModal();
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, []);
 
   return (
     <>
