@@ -10,9 +10,6 @@ interface ResistanceComponentProps {
 }
 
 export default function ResistanceComponent({ rect, isSelected, onResistanceClick, onDragStart, onDragMove }: ResistanceComponentProps) {
-  console.log("レンダリングされました")
-
-  
   const handleMouseEnter = () => {
     document.body.style.cursor = 'pointer';
   };
