@@ -26,6 +26,8 @@ export default function StageComponent({ project }: { project: Project }) {
   const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0}); 
   const [isSaving, setIsSaving] = useState(false);
 
+  const [connectionMap, setConnectionMap] = useState<Map<string, string>>(new Map());
+
   useEffect(() => {
     console.log("project.circuit_elements:", project.circuit_elements)
     
@@ -77,6 +79,9 @@ export default function StageComponent({ project }: { project: Project }) {
     setInductorCounter(_inductorCounter);
     
     // isInitialized = true;
+    connectionMap.set("resistance-1-loaded", "resistance-2-loaded");
+    // addLine(resistances[0].attrs.x, resistances[0].attrs.y, resistances[1].attrs.x, resistances[1].attrs.y, resistances[1].attrs.x, resistances[1].attrs.y, "line-1-loaded");
+
   }, [])
 
   // キーを押した時の処理
@@ -97,6 +102,29 @@ export default function StageComponent({ project }: { project: Project }) {
       e.preventDefault();
       handleSaveClick();
     }
+
+    const arrowKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+
+    if(arrowKeys.includes(e.key)) {
+      console.log(e.key + "が押されました")
+      // const selectedElement = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].find((element) => selectedIds.includes(element.id()));
+      const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
+      const selectedElements = allElements.filter((element) => selectedIds.includes(element.id()));
+      selectedElements.forEach((element) => {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+          element.y(element.y() + (e.key === "ArrowUp" ? -1 : 1));
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          element.x(element.x() + (e.key === "ArrowLeft" ? -1 : 1));
+        }
+      });
+      setResistances([...resistances]);
+      setDcPowerSupplies([...dcPowerSupplies]);
+      setCapacitors([...capacitors]);
+      setInductors([...inductors]);
+      setLines([...lines]);
+    }
+
+    
   }, [selectedIds]);
 
   useEffect(() => {
@@ -372,6 +400,12 @@ export default function StageComponent({ project }: { project: Project }) {
         <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick} disabled={isSaving}>
           {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
         </button>
+
+        {resistances.map((resistance) => (
+          <div key={resistance.id()}>
+            {resistance.id()}
+          </div>
+        ))}
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
