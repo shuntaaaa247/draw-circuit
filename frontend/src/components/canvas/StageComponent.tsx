@@ -97,6 +97,34 @@ export default function StageComponent({ project }: { project: Project }) {
       e.preventDefault();
       handleSaveClick();
     }
+
+    if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      console.log(e.key + "が押されました")
+      const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
+      const selectedElements = allElements.filter((element) => selectedIds.includes(element.id()));
+      selectedElements.forEach((element) => {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") { // 上矢印もしくは下矢印が押された場合
+          if (element instanceof Konva.Line) { // Lineの場合は、pointsを更新する
+            element.points([element.points()[0], element.points()[1] + (e.key === "ArrowUp" ? -1 : 1), element.points()[2], element.points()[3] + (e.key === "ArrowUp" ? -1 : 1)]);
+          } else { // それ以外の要素は、y座標を更新する
+            element.y(element.y() + (e.key === "ArrowUp" ? -1 : 1));
+          }
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") { // 左矢印もしくは右矢印が押された場合
+          if (element instanceof Konva.Line) { // Lineの場合は、pointsを更新する
+            element.points([element.points()[0] + (e.key === "ArrowLeft" ? -1 : 1), element.points()[1], element.points()[2] + (e.key === "ArrowLeft" ? -1 : 1), element.points()[3]]);
+          } else { // それ以外の要素は、x座標を更新する
+            element.x(element.x() + (e.key === "ArrowLeft" ? -1 : 1));
+          }
+        }
+      });
+      setResistances([...resistances]);
+      setDcPowerSupplies([...dcPowerSupplies]);
+      setCapacitors([...capacitors]);
+      setInductors([...inductors]);
+      setLines([...lines]);
+    }
+
+    
   }, [selectedIds]);
 
   useEffect(() => {
