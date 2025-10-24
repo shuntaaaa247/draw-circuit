@@ -25,7 +25,7 @@ export default function StageComponent({ project }: { project: Project }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0}); 
   const [isSaving, setIsSaving] = useState(false);
-  const [copiedElements, setCopiedElements] = useState<Omit<CircuitElement, "id">[]>([]);
+  const [copiedElementsData, setCopiedElementsData] = useState<Omit<CircuitElement, "id">[]>([]);
   const [pasteCounter, setPasteCounter] = useState(0);
 
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function StageComponent({ project }: { project: Project }) {
     }
 
     
-  }, [selectedIds]);
+  }, [selectedIds, copiedElementsData]); // copiedElementsDataも監視している(これがないとコピー後の初回ペーストができない)
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -251,7 +251,7 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
-
+    
     // console.log("x: " + event.target.x())
     // console.log("y: " + event.target.y())
     // console.log("width: " + event.target.width())
@@ -303,7 +303,6 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const handleElementDragMove = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
-    
     // console.log("lines:", lines)
 
     const draggedElement = event.target;
@@ -432,12 +431,18 @@ export default function StageComponent({ project }: { project: Project }) {
       }
     })
 
-    setCopiedElements(copiedElementsData);
+    setCopiedElementsData(copiedElementsData);
     setPasteCounter(0);
   }
 
+  // デバッグ用
+  useEffect(() => {
+    console.log("コピーされた要素のデータ:", copiedElementsData)
+  }, [copiedElementsData])
+
   const handlePasteClick = () => {
     console.log("ペーストを行います")
+    console.log("copiedElementsData:", copiedElementsData)
 
     let _resistanceCounter = resistanceCounter;
     let _lineCounter = lineCounter;
@@ -446,8 +451,13 @@ export default function StageComponent({ project }: { project: Project }) {
     let _inductorCounter = inductorCounter;
 
     const pastedElementIds: string[] = [];
+
+    if (copiedElementsData.length === 0) {
+      console.log("コピーされた要素のデータが空です")
+      return;
+    }
     
-    copiedElements.forEach((element) => {
+    copiedElementsData.forEach((element) => {
       if (element.element_type === "resistance") {
         _resistanceCounter++
         const id = addResistance(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_resistanceCounter}`)
@@ -498,7 +508,7 @@ export default function StageComponent({ project }: { project: Project }) {
           {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
         </button>
         
-        {/* <p>Copy data: {JSON.stringify(copiedElements)}</p> */}
+        <p>Copy data: {JSON.stringify(copiedElementsData)}</p>
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
