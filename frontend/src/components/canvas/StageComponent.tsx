@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Konva from "konva";
-import { Stage, Layer, Line } from "react-konva";
-import { useEffect, useState, useCallback } from "react"; 
+import { Stage, Layer, Line, Rect } from "react-konva";
+import { useEffect, useState, useRef, useCallback } from "react"; 
 import ResistanceComponent from "./ResistanceComponent";
 import DCPowerSupplyComponent from "./DCPowerSupplyComponent";
 import CapacitorComponent from "./CapacitorComponent";
@@ -27,6 +27,15 @@ export default function StageComponent({ project }: { project: Project }) {
   const [isSaving, setIsSaving] = useState(false);
   const [copiedElementsData, setCopiedElementsData] = useState<Omit<CircuitElement, "id">[]>([]);
   const [pasteCounter, setPasteCounter] = useState(0);
+
+  const [selectionRectangle, setSelectionRectangle] = useState({ // 範囲選択中に選択範囲を表示するための矩形
+    visible: false,
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0,
+  });
+  const isSelecting = useRef(false); // 範囲選択中かどうかを管理するためのref
 
   useEffect(() => {
     // console.log("project.circuit_elements:", project.circuit_elements)
@@ -494,6 +503,54 @@ export default function StageComponent({ project }: { project: Project }) {
     setSelectedIds(pastedElementIds);
   }
 
+  // 範囲選択を開始する(ステージ上でマウスダウンした時)
+  const handleMouseDownOnStage = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (e.target !== e.target.getStage()) return;
+  
+    isSelecting.current = true; // 範囲選択中かどうかをオンにする
+    const pos = e.target.getStage()?.getPointerPosition() || {x: 0, y: 0};
+    setSelectionRectangle({
+      visible: true, // 範囲選択の矩形表示をオンにする
+      x1: pos?.x || 0,
+      y1: pos?.y || 0,
+      x2: pos?.x || 0,
+      y2: pos?.y || 0,
+    });
+  };
+
+  // 範囲選択を行う(ステージ上でマウスムーブした時)
+  const handleMouseMoveOnStage = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (!isSelecting.current) return; // 範囲選択中かどうかをチェック
+  
+    const pos = e.target.getStage()?.getPointerPosition() || {x: 0, y: 0};
+    setSelectionRectangle({
+      ...selectionRectangle,
+      x2: pos.x || 0,
+      y2: pos.y || 0,
+    });
+  };
+
+  // 範囲選択を終了する(ステージ上でマウスアップした時)
+  const handleMouseUpOnStage = () => {
+    if (!isSelecting.current) return; // 範囲選択中かどうかをチェック
+    isSelecting.current = false; // 範囲選択中かどうかをオフにする
+  
+    setSelectionRectangle({ ...selectionRectangle, visible: false }); // 範囲選択の矩形表示をオフにする
+
+    const selBox = { // 範囲選択の矩形の範囲を取得
+      x: Math.min(selectionRectangle.x1, selectionRectangle.x2),
+      y: Math.min(selectionRectangle.y1, selectionRectangle.y2),
+      width: Math.abs(selectionRectangle.x2 - selectionRectangle.x1),
+      height: Math.abs(selectionRectangle.y2 - selectionRectangle.y1),
+    };
+  
+    const selectedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter(element => { // 範囲選択の矩形と交差する要素を取得
+      return Konva.Util.haveIntersection(selBox, element.getClientRect()); // 範囲選択の矩形と要素が交差するかどうかを返す
+    });
+  
+    setSelectedIds(selectedElements.map(element => element.id())); // 選択された要素のidをセット
+  };
+
   return (
     <div className="flex">
       <div className="flex flex-col bg-gray-200 p-2 w-[15%]">
@@ -512,7 +569,14 @@ export default function StageComponent({ project }: { project: Project }) {
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
-        <Stage width={window.innerWidth * 0.85} height={window.innerHeight} onClick={handleStageClick}>
+        <Stage 
+          width={window.innerWidth * 0.85} 
+          height={window.innerHeight} 
+          onClick={handleStageClick} 
+          onMouseDown={handleMouseDownOnStage} 
+          onMouseMove={handleMouseMoveOnStage}
+          onMouseUp={handleMouseUpOnStage}
+        >
           <Layer>
             {resistances.map((resistance, index) => (
               // console.log("レジスタンス:", resistance),
@@ -571,6 +635,15 @@ export default function StageComponent({ project }: { project: Project }) {
                 onInductorClick={handleClick}
               />
             ))}
+            {selectionRectangle.visible && ( // 範囲選択中に選択範囲を表示する
+              <Rect // 範囲選択の矩形
+                x={Math.min(selectionRectangle.x1, selectionRectangle.x2)}
+                y={Math.min(selectionRectangle.y1, selectionRectangle.y2)}
+                width={Math.abs(selectionRectangle.x2 - selectionRectangle.x1)}
+                height={Math.abs(selectionRectangle.y2 - selectionRectangle.y1)}
+                fill="rgba(30,144,255,0.3)"
+              />
+            )}
           </Layer>
         </Stage>
         
