@@ -12,11 +12,11 @@ import LineComponent from "./LineComponent";
 import { Project, CircuitElement } from "@/types";
 
 export default function StageComponent({ project }: { project: Project }) {
-  const [resistanceCounter, setResistanceCounter] = useState(0);
-  const [dcPowerSupplyCounter, setDcPowerSupplyCounter] = useState(0);
-  const [capacitorCounter, setCapacitorCounter] = useState(0);
-  const [inductorCounter, setInductorCounter] = useState(0);
-  const [lineCounter, setLineCounter] = useState(0);
+  const [resistanceCounter, setResistanceCounter] = useState(0); // 消せる余地あり
+  const [dcPowerSupplyCounter, setDcPowerSupplyCounter] = useState(0); // 消せる余地あり
+  const [capacitorCounter, setCapacitorCounter] = useState(0); // 消せる余地あり
+  const [inductorCounter, setInductorCounter] = useState(0); // 消せる余地あり
+  const [lineCounter, setLineCounter] = useState(0); // 消せる余地あり
   const [resistances, setResistances] = useState<Konva.Rect[]>([]);
   const [dcPowerSupplies, setDcPowerSupplies] = useState<Konva.Group[]>([]);
   const [capacitors, setCapacitors] = useState<Konva.Group[]>([]);
@@ -25,9 +25,11 @@ export default function StageComponent({ project }: { project: Project }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0}); 
   const [isSaving, setIsSaving] = useState(false);
+  const [copiedElements, setCopiedElements] = useState<Omit<CircuitElement, "id">[]>([]);
+  const [pasteCounter, setPasteCounter] = useState(0);
 
   useEffect(() => {
-    console.log("project.circuit_elements:", project.circuit_elements)
+    // console.log("project.circuit_elements:", project.circuit_elements)
     
     // 既存の要素をクリア
     setResistances([]);
@@ -69,7 +71,7 @@ export default function StageComponent({ project }: { project: Project }) {
       }
     })
     
-    // カウンターを最大ID + 1に設定
+    // 保存されていた要素をセットし終わったら、カウンターをセットする
     setResistanceCounter(_resistanceCounter);
     setLineCounter(_lineCounter);
     setDcPowerSupplyCounter(_dcPowerSupplyCounter);
@@ -98,8 +100,21 @@ export default function StageComponent({ project }: { project: Project }) {
       handleSaveClick();
     }
 
+    // Ctrl/Command + Cが押された場合は、コピーを行う
+    if (e.key === "c" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleCopyClick();
+    }
+
+    // Ctrl/Command + Vが押された場合は、ペーストを行う
+    if (e.key === "v" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handlePasteClick();
+    }
+
+    // 方向キーが押された場合は、選択された要素を移動する
     if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-      console.log(e.key + "が押されました")
+      // console.log(e.key + "が押されました")
       const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
       const selectedElements = allElements.filter((element) => selectedIds.includes(element.id()));
       selectedElements.forEach((element) => {
@@ -136,8 +151,8 @@ export default function StageComponent({ project }: { project: Project }) {
     };
   }, [handleKeyDown]);
 
-  const addResistance = (x?: number, y?: number, rotation?: number, id?: string) => { // idはデータベースのidで初期ロードでデータベース上の素子を描画するときはこのidを使用する
-    console.log("レジスタンスを追加します")
+  const addResistance = (x?: number, y?: number, rotation?: number, id?: string): string => { // idはデータベースのidで初期ロードでデータベース上の素子を描画するときはこのidを使用する
+    // console.log("レジスタンスを追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
       setResistanceCounter(prevResistanceCounter => prevResistanceCounter + 1);
@@ -151,10 +166,11 @@ export default function StageComponent({ project }: { project: Project }) {
       rotation: rotation ? rotation : 0, // 回転角度を初期化
     });
     setResistances(prevResistances => [...prevResistances, resistance]);
+    return resistance.id();
   }
 
-  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string) => {
-    console.log("線を追加します")
+  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string): string => {
+    // console.log("線を追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
       setLineCounter(prevLineCounter => prevLineCounter + 1);
@@ -171,11 +187,11 @@ export default function StageComponent({ project }: { project: Project }) {
       rotation: 0,
     });
     setLines(prevLines => [...prevLines, line]);
-    // setLineCounter(prevLineCounter => prevLineCounter + 1);
+    return line.id();
   }
 
-  const addDCPowerSupply = (x?: number, y?: number, rotation?: number, id?: string) => {
-    console.log("DC電源を追加します")
+  const addDCPowerSupply = (x?: number, y?: number, rotation?: number, id?: string): string => {
+    // console.log("DC電源を追加します")
     if (!id) {
       setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
     }
@@ -191,10 +207,11 @@ export default function StageComponent({ project }: { project: Project }) {
       id: `dcPowerSupply-${id ? id : dcPowerSupplyCounter + 1}`,
     });
     setDcPowerSupplies(prevDcPowerSupplies => [...prevDcPowerSupplies, dcPowerSupply]);
+    return dcPowerSupply.id();
   }
 
-  const addCapacitor = (x?: number, y?: number, rotation?: number, id?: string) => {
-    console.log("コンデンサを追加します")
+  const addCapacitor = (x?: number, y?: number, rotation?: number, id?: string): string => {
+    // console.log("コンデンサを追加します")
     if (!id) {
       setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
     }
@@ -210,10 +227,11 @@ export default function StageComponent({ project }: { project: Project }) {
       id: `capacitor-${id ? id : capacitorCounter + 1}`,
     });
     setCapacitors(prevCapacitors => [...prevCapacitors, capacitor]);
+    return capacitor.id();
   }
 
-  const addInductor = (x?: number, y?: number, rotation?: number, id?: string) => {
-    console.log("インダクタを追加します")
+  const addInductor = (x?: number, y?: number, rotation?: number, id?: string): string => {
+    // console.log("インダクタを追加します")
     if (!id) {
       setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
     }
@@ -229,17 +247,18 @@ export default function StageComponent({ project }: { project: Project }) {
       id: `inductor-${id ? id : inductorCounter + 1}`,
     });
     setInductors(prevInductors => [...prevInductors, inductor]);
+    return inductor.id();
   }
 
   const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
 
-    console.log("x: " + event.target.x())
-    console.log("y: " + event.target.y())
-    console.log("width: " + event.target.width())
-    console.log("height: " + event.target.height())
-    console.log("rotation: " + event.target.rotation())
-    console.log("id: " + event.target.id())
-    console.log("points: " + (event.target instanceof Konva.Line ? event.target.points() : "Not Line"))
+    // console.log("x: " + event.target.x())
+    // console.log("y: " + event.target.y())
+    // console.log("width: " + event.target.width())
+    // console.log("height: " + event.target.height())
+    // console.log("rotation: " + event.target.rotation())
+    // console.log("id: " + event.target.id())
+    // console.log("points: " + (event.target instanceof Konva.Line ? event.target.points() : "Not Line"))
 
     // ただクリックした場合は選択状態の要素をクリックされた要素のみにする
     setSelectedIds([id]);
@@ -285,7 +304,7 @@ export default function StageComponent({ project }: { project: Project }) {
 
   const handleElementDragMove = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
     
-    console.log("lines:", lines)
+    // console.log("lines:", lines)
 
     const draggedElement = event.target;
     
@@ -339,11 +358,11 @@ export default function StageComponent({ project }: { project: Project }) {
 
   const handleSaveClick = async () => {
     setIsSaving(true);
-    console.log("resistances:", resistances)
-    console.log("lines:", lines)
-    console.log("dcPowerSupplies:", dcPowerSupplies)
-    console.log("capacitors:", capacitors)
-    console.log("inductors:", inductors)
+    // console.log("resistances:", resistances)
+    // console.log("lines:", lines)
+    // console.log("dcPowerSupplies:", dcPowerSupplies)
+    // console.log("capacitors:", capacitors)
+    // console.log("inductors:", inductors)
 
     const elements = [...resistances, ...lines, ...dcPowerSupplies, ...capacitors, ...inductors]
     const latestCircuitElementsData = elements.map((element) => {
@@ -364,7 +383,7 @@ export default function StageComponent({ project }: { project: Project }) {
         rotation: element.rotation(),
       }
     })
-    console.log("latestCircuitElementsData:", latestCircuitElementsData)
+    // console.log("latestCircuitElementsData:", latestCircuitElementsData)
     
     try {
       const response = await fetch(`http://localhost:4000/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
@@ -380,11 +399,89 @@ export default function StageComponent({ project }: { project: Project }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log("data:", data);
+      // console.log("data:", data);
     } catch (error) {
       console.error("Error saving latest circuit elements data:", error);
     }
     setIsSaving(false);
+  }
+
+  const handleCopyClick = () => {
+    console.log("コピーを行います");
+    // 選択されている要素をコピー(時間かかりそうだけどとりあえずこれで...)
+    // setCopiedElements([...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter((element) => selectedIds.includes(element.id())));
+    const copiedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter((element) => selectedIds.includes(element.id()));
+
+    // handleSaveClick内のコードと同じように、コピーされた要素のデータを取得
+    const copiedElementsData = copiedElements.map((element) => {
+      let elementType = element.id().split("-")[0]
+      if (elementType === "dcPowerSupply") {
+        elementType = "dc_power_supply"
+      }
+      return {
+        element_type: elementType,
+        x_position: element.attrs.x,
+        y_position: element.attrs.y,
+        start_x_position: elementType === "line" ? element.attrs.points[0] : null,
+        start_y_position: elementType === "line" ? element.attrs.points[1] : null,
+        end_x_position: elementType === "line" ? element.attrs.points[2] : null,
+        end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        width: element.width(),
+        height: element.height(),
+        rotation: element.rotation(),
+      }
+    })
+
+    setCopiedElements(copiedElementsData);
+    setPasteCounter(0);
+  }
+
+  const handlePasteClick = () => {
+    console.log("ペーストを行います")
+
+    let _resistanceCounter = resistanceCounter;
+    let _lineCounter = lineCounter;
+    let _dcPowerSupplyCounter = dcPowerSupplyCounter;
+    let _capacitorCounter = capacitorCounter;
+    let _inductorCounter = inductorCounter;
+
+    const pastedElementIds: string[] = [];
+    
+    copiedElements.forEach((element) => {
+      if (element.element_type === "resistance") {
+        _resistanceCounter++
+        const id = addResistance(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_resistanceCounter}`)
+        pastedElementIds.push(id);
+      } 
+      else if (element.element_type === "line") {
+        _lineCounter++
+        const id = addLine(Number(element.x_position), Number(element.y_position), Number(element.start_x_position) + 5*(pasteCounter+1), Number(element.start_y_position) + 5*(pasteCounter+1), Number(element.end_x_position) + 5*(pasteCounter+1), Number(element.end_y_position) + 5*(pasteCounter+1), `${_lineCounter}`)
+        pastedElementIds.push(id);
+      } else if (element.element_type === "dc_power_supply") {
+        _dcPowerSupplyCounter++
+        const id = addDCPowerSupply(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_dcPowerSupplyCounter}`)
+        pastedElementIds.push(id);
+      } else if (element.element_type === "capacitor") {
+        _capacitorCounter++
+        const id = addCapacitor(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_capacitorCounter}`)
+        pastedElementIds.push(id);
+      } else if (element.element_type === "inductor") {
+        _inductorCounter++
+        const id = addInductor(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_inductorCounter}`)
+        pastedElementIds.push(id);
+      }
+    })
+
+    // コピーした要素をセットし終わったら、カウンターをセットする
+    setResistanceCounter(_resistanceCounter);
+    setLineCounter(_lineCounter);
+    setDcPowerSupplyCounter(_dcPowerSupplyCounter);
+    setCapacitorCounter(_capacitorCounter);
+    setInductorCounter(_inductorCounter);
+
+    setPasteCounter(prevPasteCounter => prevPasteCounter + 1);
+
+    setSelectedIds(pastedElementIds);
   }
 
   return (
@@ -400,13 +497,15 @@ export default function StageComponent({ project }: { project: Project }) {
         <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick} disabled={isSaving}>
           {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
         </button>
+        
+        {/* <p>Copy data: {JSON.stringify(copiedElements)}</p> */}
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
         <Stage width={window.innerWidth * 0.85} height={window.innerHeight} onClick={handleStageClick}>
           <Layer>
             {resistances.map((resistance, index) => (
-              console.log("レジスタンス:", resistance),
+              // console.log("レジスタンス:", resistance),
               <ResistanceComponent 
                 key={resistance.id()} 
                 rect={resistance} 
@@ -417,7 +516,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {lines.map((line) => (
-              console.log("線:", line),
+              // console.log("線:", line),
               <LineComponent
                 key={line.id()}
                 line={line}
@@ -430,7 +529,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {dcPowerSupplies.map((dcPowerSupply) => (
-              console.log("DC電源:", dcPowerSupply),
+              // console.log("DC電源:", dcPowerSupply),
               <DCPowerSupplyComponent 
                 key={dcPowerSupply.id()}
                 group={dcPowerSupply}
@@ -441,7 +540,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {capacitors.map((capacitor) => (
-              console.log("コンデンサ:", capacitor),
+              // console.log("コンデンサ:", capacitor),
               <CapacitorComponent
                 key={capacitor.id()}
                 group={capacitor}
@@ -452,7 +551,7 @@ export default function StageComponent({ project }: { project: Project }) {
               />
             ))}
             {inductors.map((inductor) => (
-              console.log("インダクタ:", inductor),
+              // console.log("インダクタ:", inductor),
               <InductorComponent
                 key={inductor.id()}
                 group={inductor}
