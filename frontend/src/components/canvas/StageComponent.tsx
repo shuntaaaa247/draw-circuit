@@ -36,6 +36,7 @@ export default function StageComponent({ project }: { project: Project }) {
     y2: 0,
   });
   const isSelecting = useRef(false); // 範囲選択中かどうかを管理するためのref
+  const isDraggingLineControlPoint = useRef(false); // Lineの制御点をドラッグしているかどうかを管理するためのref
 
   useEffect(() => {
     // console.log("project.circuit_elements:", project.circuit_elements)
@@ -191,7 +192,10 @@ export default function StageComponent({ project }: { project: Project }) {
     const endPointY = startXPosition && startYPosition && endXPosition && endYPosition ? endYPosition : startPointY;
     
     const line = new Konva.Line({
-      points: [startPointX + (x ? x : 0), startPointY + (y ? y : 0), endPointX + (x ? x : 0), endPointY + (y ? y : 0)],
+      // x: x && y ? x : 0,
+      // y: y && y ? y : 0,
+      points: [startPointX, startPointY, endPointX, endPointY],
+      // points: [startPointX + (x ? x : 0), startPointY + (y ? y : 0), endPointX + (x ? x : 0), endPointY + (y ? y : 0)],
       id: `line-${id ? id : lineCounter + 1}`,
       rotation: 0,
     });
@@ -314,6 +318,15 @@ export default function StageComponent({ project }: { project: Project }) {
   const handleElementDragMove = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
     // console.log("lines:", lines)
 
+    // if (document.body.style.cursor === 'crosshair') { // Lineの制御点をドラッグしている場合は、Line自体としてのドラッグを無視する
+    //   return;
+    // } // 最低限これでいいかもしれないが、Lineの制御点をドラッグ中にカーソルの種類が変わってしまうことがあるため、カバーしきれない
+    if (isDraggingLineControlPoint.current) {
+      return;
+    }
+
+    console.log("あああ")
+
     const draggedElement = event.target;
     
     // 全ての要素配列を統合して、ドラッグされた要素を見つける
@@ -341,9 +354,12 @@ export default function StageComponent({ project }: { project: Project }) {
       // element.y(element.y() + deltaY);
       if (element instanceof Konva.Line) {
         element.points([element.points()[0] + deltaX, element.points()[1] + deltaY, element.points()[2] + deltaX, element.points()[3] + deltaY]);
+        // element.points([element.points()[0] + Math.round(deltaX), element.points()[1] + Math.round(deltaY), element.points()[2] + Math.round(deltaX), element.points()[3] + Math.round(deltaY)]);
       } else {
         element.x(element.x() + deltaX);
         element.y(element.y() + deltaY);
+        // element.x(element.x() + Math.round(deltaX));
+        // element.y(element.y() + Math.round(deltaY));
       }
     });
 
@@ -354,12 +370,29 @@ export default function StageComponent({ project }: { project: Project }) {
     setInductors([...inductors]);
     setLines([...lines]);
   }
+  
+  // テスト用
+  // handleLineResizeが実行されるとここが実行されるので、handleLineResizeが実行されるとlinesが変更されることを確認できる
+  // useEffect(() => {
+  //   // console.log("line.x(0): " + line.x())
+  //   // console.log("line.y(0): " + line.y())
+  //   alert("テスト")
+  //   alert("lines[0]: " + JSON.stringify(lines[0]))
+  // }, [lines])
 
-  const handleLineResize = (event: Konva.KonvaEventObject<MouseEvent>, id: string, newPoints?: number[]) => {
+  // const handleLineResize = (event: Konva.KonvaEventObject<MouseEvent>, id: string, newPoints?: number[]) => {
+  const handleLineResize = (event: Konva.KonvaEventObject<MouseEvent>, id: string, newX?: number, newY?: number, newPoints?: number[]) => {
     const line = lines.find((line) => line.id() === id);
     setPointerPosition(event.target.getStage()?.getPointerPosition() || {x: 0, y: 0})
     if (line) {
+      // line.x(0); // 試験的に追加 これができればいいんだけど効かないっぽい
+      // line.y(0); // 試験的に追加
+      // line.attrs.x = 0; // 試験的に追加
+      // line.attrs.y = 0; // 試験的に追加
+      // alert("line.x(0): " + line.x())
+      // alert("line.y(0): " + line.y())
       line.points(newPoints)
+      console.log("line:", line)
       setLines([...lines]);
     }
   }
@@ -380,18 +413,24 @@ export default function StageComponent({ project }: { project: Project }) {
       }
       return {
         element_type: elementType,
-        x_position: element.attrs.x,
-        y_position: element.attrs.y,
-        start_x_position: elementType === "line" ? element.attrs.points[0] : null,
-        start_y_position: elementType === "line" ? element.attrs.points[1] : null,
-        end_x_position: elementType === "line" ? element.attrs.points[2] : null,
-        end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        // x_position: element.attrs.x,
+        // y_position: element.attrs.y,
+        x_position: elementType === "line" ? null : element.attrs.x,
+        y_position: elementType === "line" ? null : element.attrs.y,
+        // start_x_position: elementType === "line" ? element.attrs.points[0] : null,
+        // start_y_position: elementType === "line" ? element.attrs.points[1] : null,
+        // end_x_position: elementType === "line" ? element.attrs.points[2] : null,
+        // end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        start_x_position: elementType === "line" ? element.attrs.points[0] + (element.attrs.x ? element.attrs.x : 0) : null,
+        start_y_position: elementType === "line" ? element.attrs.points[1] + (element.attrs.y ? element.attrs.y : 0) : null,
+        end_x_position: elementType === "line" ? element.attrs.points[2] + (element.attrs.x ? element.attrs.x : 0) : null,
+        end_y_position: elementType === "line" ? element.attrs.points[3] + (element.attrs.y ? element.attrs.y : 0) : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
         width: element.width(),
         height: element.height(),
         rotation: element.rotation(),
       }
     })
-    // console.log("latestCircuitElementsData:", latestCircuitElementsData)
+    console.log("latestCircuitElementsData:", latestCircuitElementsData)
     
     try {
       const response = await fetch(`http://localhost:4000/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
@@ -475,6 +514,7 @@ export default function StageComponent({ project }: { project: Project }) {
       else if (element.element_type === "line") {
         _lineCounter++
         const id = addLine(Number(element.x_position), Number(element.y_position), Number(element.start_x_position) + 5*(pasteCounter+1), Number(element.start_y_position) + 5*(pasteCounter+1), Number(element.end_x_position) + 5*(pasteCounter+1), Number(element.end_y_position) + 5*(pasteCounter+1), `${_lineCounter}`)
+        // const id = addLine(undefined, undefined, Number(element.start_x_position) + 5*(pasteCounter+1), Number(element.start_y_position) + 5*(pasteCounter+1), Number(element.end_x_position) + 5*(pasteCounter+1), Number(element.end_y_position) + 5*(pasteCounter+1), `${_lineCounter}`)
         pastedElementIds.push(id);
       } else if (element.element_type === "dc_power_supply") {
         _dcPowerSupplyCounter++
@@ -566,6 +606,7 @@ export default function StageComponent({ project }: { project: Project }) {
         </button>
         
         <p>Copy data: {JSON.stringify(copiedElementsData)}</p>
+        <p>Project data: {JSON.stringify(project.circuit_elements)}</p>
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
@@ -600,6 +641,7 @@ export default function StageComponent({ project }: { project: Project }) {
                 onDragMove={handleElementDragMove}
                 onLineResize={handleLineResize}
                 numOfSelectedIds={selectedIds.length}
+                isDraggingLineControlPoint={isDraggingLineControlPoint}
               />
             ))}
             {dcPowerSupplies.map((dcPowerSupply) => (

@@ -9,8 +9,10 @@ interface LineComponentProps {
   onLineClick: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragStart: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragMove: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
-  onLineResize: (event: Konva.KonvaEventObject<MouseEvent>, id: string, newPoints?: number[], newX?: number, newY?: number, newLength?: number) => void;
+  // onLineResize: (event: Konva.KonvaEventObject<MouseEvent>, id: string, newPoints?: number[], newX?: number, newY?: number, newLength?: number) => void;
+  onLineResize: (event: Konva.KonvaEventObject<MouseEvent>, id: string, newX?: number, newY?: number, newPoints?: number[]) => void;
   numOfSelectedIds: number;
+  isDraggingLineControlPoint: React.RefObject<boolean>;
 }
 
 export default function LineComponent({ 
@@ -20,7 +22,8 @@ export default function LineComponent({
   onDragStart,
   onDragMove,
   onLineResize,
-  numOfSelectedIds
+  numOfSelectedIds,
+  isDraggingLineControlPoint
 }: LineComponentProps) {
 
   const handleMouseEnter = () => {
@@ -36,10 +39,14 @@ export default function LineComponent({
 
   // 制御点のドラッグハンドラ
   const handleControlPointDrag = (pointIndex: number, event: Konva.KonvaEventObject<MouseEvent>) => {
+
+    isDraggingLineControlPoint.current = true;
+
     points[pointIndex * 2] = event.target.x()
     points[pointIndex * 2 + 1] = event.target.y()
 
-    onLineResize(event, line.id(), points) 
+    // onLineResize(event, line.id(), points) 
+    onLineResize(event, line.id(), event.target.x(), event.target.y(), points) 
   };
 
   const handleControlPointClick = (pointIndex: number, event: Konva.KonvaEventObject<MouseEvent>) => {
@@ -76,6 +83,7 @@ export default function LineComponent({
             draggable={true}
             onClick={(event) => handleControlPointClick(0, event)}
             onDragMove={(event) => handleControlPointDrag(0, event)}
+            onDragEnd={() => isDraggingLineControlPoint.current = false}
             onMouseEnter={() => document.body.style.cursor = 'crosshair'}
             onMouseLeave={() => document.body.style.cursor = 'default'}
           />
@@ -99,6 +107,7 @@ export default function LineComponent({
             draggable={true}
             onClick={(event) => handleControlPointClick(1, event)}
             onDragMove={(event) => handleControlPointDrag(1, event)}
+            onDragEnd={() => isDraggingLineControlPoint.current = false}
             onMouseEnter={() => document.body.style.cursor = 'crosshair'}
             onMouseLeave={() => document.body.style.cursor = 'default'}
           />
