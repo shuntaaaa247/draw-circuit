@@ -3,6 +3,8 @@ import { Project } from '@/types';
 import ProjectList from '@/components/home/ProjectList';
 import CreateProjectButton from '@/components/home/CreateProjectButton';
 
+export const dynamic = 'force-dynamic' // Dynamic Rendering(従来のSSRに相当)になる(fetchのno-storeでもDynamic Renderingになるが、ここでより明示的にしている)
+
 async function getProjects(): Promise<Project[]> {
   try {
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
@@ -16,7 +18,8 @@ async function getProjects(): Promise<Project[]> {
       headers: {
         'Authorization': `Bearer ${token}`
       },
-      cache: 'no-store',
+      cache: 'no-store', // Dynamic Rendering(従来のSSRに相当)になる
+      // cache: 'force-cache', // Static Rendering(SSGに相当)になる
       // credentials: 'include'
     })
     
