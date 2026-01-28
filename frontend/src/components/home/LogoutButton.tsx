@@ -3,9 +3,11 @@ import { logout } from "@/libs/auth/logout"
 
 export default function LogoutButton() {
   return(
-    <button 
-      className='ml-3 p-2 rounded-md border border-slate-200 hover:bg-slate-200'
+    <button
+      className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:border-slate-400"
       onClick={logout}
-    >ログアウト</button>
+    >
+      ログアウト
+    </button>
   )
 }

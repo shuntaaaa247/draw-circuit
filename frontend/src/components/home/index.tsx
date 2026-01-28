@@ -1,6 +1,8 @@
-import { Project } from "@/types"
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { Project } from "@/types"
 import { ProjectListItem } from './ProjectListItem'
+
 
 async function getProjects(): Promise<Project[]> {
   try {
@@ -23,6 +25,9 @@ async function getProjects(): Promise<Project[]> {
     if (!response.ok) {
       const resJson = await response.json();
       console.log('Response JSON:', resJson);
+      if (response.status === 401) {
+        return redirect('/');
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
@@ -38,15 +43,22 @@ async function getProjects(): Promise<Project[]> {
 
 // export default async function ProjectList() {
 export const ProjectList = async () => {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('token')?.value
+  if (!token) {
+    return redirect('/');
+  }
   const projects = await getProjects();
   return (
-    <ul>
+    <ul className="space-y-3">
       {projects && projects.length > 0 ? (
         projects.map((project: Project) => (
           <ProjectListItem key={project.id} project={project} />
         ))
       ) : (
-        <p>プロジェクトが見つかりません</p>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center text-slate-500 shadow-sm">
+          プロジェクトが見つかりません
+        </div>
       )}
     </ul>
   )
@@ -54,19 +66,16 @@ export const ProjectList = async () => {
 
 export const ProjectListSkeleton = () => {
   return (
-    <ul>
-      <li className="p-4 bg-gray-50 hover:bg-gray-100 animate-pulse mx-16 my-1 rounded-md border-1 cursor-pointer flex flex-col">
-        <div className="w-full h-5 my-1 bg-gray-200 rounded-sm animate-pulse"></div>
-        <div className="w-full h-4 mb-1 bg-gray-200 rounded-sm animate-pulse"></div>
-      </li>
-      <li className="p-4 bg-gray-50 hover:bg-gray-100 mx-16 my-1 rounded-md border-1 cursor-pointer flex flex-col">
-        <div className="w-full h-5 my-1 bg-gray-200 rounded-sm animate-pulse"></div>
-        <div className="w-full h-4 mb-1 bg-gray-200 rounded-sm animate-pulse"></div>
-      </li>
-      <li className="p-4 bg-gray-50 hover:bg-gray-100 mx-16 my-1 rounded-md border-1 cursor-pointer flex flex-col">
-        <div className="w-full h-5 my-1 bg-gray-200 rounded-sm animate-pulse"></div>
-        <div className="w-full h-4 mb-1 bg-gray-200 rounded-sm animate-pulse"></div>
-      </li>
+    <ul className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <li
+          key={i}
+          className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
+        >
+          <div className="mb-2 h-5 w-2/3 rounded bg-slate-200 animate-pulse" />
+          <div className="h-4 w-1/2 rounded bg-slate-100 animate-pulse" />
+        </li>
+      ))}
     </ul>
   )
 }

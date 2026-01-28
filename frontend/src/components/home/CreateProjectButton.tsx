@@ -30,9 +30,12 @@ export default function CreateProjectButton() {
 
   return (
     <>
-      <button className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 cursor-pointer"
+      <button
+        className="rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700 active:scale-[0.98] cursor-pointer"
         onClick={handleOpenModal}
-      >新規プロジェクト</button>
+      >
+        新規プロジェクト
+      </button>
       {modalIsOpen && <CreateProjectModal handleCloseModal={handleCloseModal} />}
     </>
   )

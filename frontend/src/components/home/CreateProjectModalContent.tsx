@@ -56,8 +56,8 @@ export default function CreateProjectModal({ handleCloseModal }: CreateProjectMo
     router.refresh()
   }
   return (
-    <div className="fixed top-0 left-0 w-full h-full bg-black/50 z-10 flex justify-center items-center" onClick={handleCloseModal}>
-      <div className="bg-white w-1/2 p-8 pt- rounded-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed top-0 left-0 w-full h-full bg-black/50 z-50 flex justify-center items-center" onClick={handleCloseModal}>
+      <div className="bg-white w-1/2 p-8 rounded-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
         <span className="text-2xl text-left hover:bg-gray-100 rounded-md w-8 h-8 flex items-center justify-center cursor-pointer" onClick={handleCloseModal}><ClearIcon /></span>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
           <h1 className="text-2xl font-bold mb-4">新規プロジェクト作成</h1>

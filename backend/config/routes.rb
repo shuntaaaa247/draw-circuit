@@ -1,8 +1,9 @@
 Rails.application.routes.draw do
   namespace :api do # namespaceはURLやコントローラの階層を作成するためのもの /api/v1/... というURLになり、コントローラーもAPI::V1::配下のクラスが対象となる
     namespace :v1 do # namespaceはURLやコントローラの階層を作成するためのもの /api/v1/... というURLになり、コントローラーもAPI::V1::配下のクラスが対象となる
-      post "register", to: "auth#register"
-      post "login", to: "auth#login"
+      post "auth/register", to: "auth#register"
+      post "auth/login", to: "auth#login"
+      get "auth/check", to: "auth#check"
 
       resources :projects, only: [:index, :show, :create, :update, :destroy] do # resourcesはRESTfulなルーティングを自動的に生成するためのもの、onlyで指定したアクションのみを生成する
         # ↑↑onlyに指定したアクションをよしなに生成してくれる
