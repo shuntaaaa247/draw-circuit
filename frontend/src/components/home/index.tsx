@@ -5,6 +5,9 @@ import { ProjectListItem } from './ProjectListItem'
 
 
 async function getProjects(): Promise<Project[]> {
+  let shouldRedirect = false;
+  const returnValue: Project[] = [];
+
   try {
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
     console.log('API Base URL:', apiBaseUrl);
@@ -18,36 +21,31 @@ async function getProjects(): Promise<Project[]> {
         'Authorization': `Bearer ${token}`
       },
       cache: 'no-store', // Dynamic Rendering(従来のSSRに相当)になる
-      // cache: 'force-cache', // Static Rendering(SSGに相当)になる
-      // credentials: 'include'
     })
     
     if (!response.ok) {
-      const resJson = await response.json();
-      console.log('Response JSON:', resJson);
       if (response.status === 401) {
-        return redirect('/');
+        shouldRedirect = true;
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+    } else {
+      const resJson = await response.json();
+      returnValue.push(...resJson);
     }
     
-    console.log('Response:', response);
-    const resJson = await response.json();
-    console.log('ResJSON:', resJson);
-    return resJson;
   } catch (error) {
     console.error('Error fetching projects:', error);
-    return [];
   }
+
+  if (shouldRedirect) {
+    redirect('/api/auth/logout');
+  }
+  return returnValue;
 }
 
 // export default async function ProjectList() {
 export const ProjectList = async () => {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('token')?.value
-  if (!token) {
-    return redirect('/');
-  }
   const projects = await getProjects();
   return (
     <ul className="space-y-3">
