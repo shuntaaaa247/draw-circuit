@@ -3,13 +3,14 @@ import { SubmitHandler, useForm } from "react-hook-form"
 import ClearIcon from '@mui/icons-material/Clear';
 import { NewProjectInput } from "@/types"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, redirect } from "next/navigation"
 
 type CreateProjectModalContentProps = {
   handleCloseModal: () => void
 }
 
 const sendCreateProjectRequest = async (data: NewProjectInput): Promise<{ isSuccess: boolean, rawApiErrorMessage: string | null }> => {
+  let shouldRedirect = false;
   try {
     const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:4000';
     const response = await fetch(`${apiBaseUrl}/api/v1/projects`, {
@@ -26,15 +27,23 @@ const sendCreateProjectRequest = async (data: NewProjectInput): Promise<{ isSucc
       credentials: 'include',
     })
     if (!response.ok) {
-      // throw new Error("Failed to create project")
-      // console.error("Failed to create project", response.statusText)
-      return { isSuccess: false, rawApiErrorMessage: response.statusText}
+      if (response.status === 401) {
+        // 今後この場でログインできるようにしたい(入力データが失われないような方法を要検討)
+        alert("セッションが切れました。再度ログインしてください。");
+        shouldRedirect = true;
+      } else {
+        return { isSuccess: false, rawApiErrorMessage: response.statusText}
+      }
     }
-    return { isSuccess: true, rawApiErrorMessage: null }
   } catch (error) {
     // console.error("Failed to create project", error)
     return { isSuccess: false, rawApiErrorMessage: "プロジェクトの作成に失敗しました" }
   }
+  
+  if (shouldRedirect) {
+    redirect("/api/auth/logout");
+  }
+  return { isSuccess: true, rawApiErrorMessage: null }
 }
 
 export default function CreateProjectModal({ handleCloseModal }: CreateProjectModalContentProps) {
