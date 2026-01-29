@@ -17,12 +17,14 @@ export default async function Home() {
       {/* ヘッダー */}
       <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
-          <h1 className="text-xl font-bold tracking-tight text-slate-800 sm:text-2xl">
-            Draw Circuit
+          <h1 className="text-xl font-bold tracking-tight text-slate-800 sm:text-2xl cursor-pointer">
+            <Link href="/">
+              Draw Circuit
+            </Link>
           </h1>
           <div className="flex items-center gap-2">
-            { process.env.SERVER_IS_READY !== "false" && <CreateProjectButton /> }
-            { token ? <LogoutButton /> : process.env.SERVER_IS_READY !== "false" && <LoginButton />}
+            { process.env.SERVER_IS_READY !== "false" && token ? <CreateProjectButton /> : null }
+            { token ? <LogoutButton /> : process.env.SERVER_IS_READY !== "false" ? <LoginButton /> : null }
           </div>
         </div>
       </header>
