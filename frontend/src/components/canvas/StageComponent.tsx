@@ -4,6 +4,7 @@ import Link from "next/link";
 import Konva from "konva";
 import { Stage, Layer, Line, Rect } from "react-konva";
 import { useEffect, useState, useRef, useCallback } from "react"; 
+import { usePathname, redirect, useRouter } from "next/navigation";  
 import ResistanceComponent from "./ResistanceComponent";
 import DCPowerSupplyComponent from "./DCPowerSupplyComponent";
 import CapacitorComponent from "./CapacitorComponent";
@@ -12,6 +13,7 @@ import LineComponent from "./LineComponent";
 import { Project, CircuitElement } from "@/types";
 
 export default function StageComponent({ project }: { project: Project }) {
+  const pathname = usePathname();
   const [resistanceCounter, setResistanceCounter] = useState(0); // 消せる余地あり
   const [dcPowerSupplyCounter, setDcPowerSupplyCounter] = useState(0); // 消せる余地あり
   const [capacitorCounter, setCapacitorCounter] = useState(0); // 消せる余地あり
@@ -398,6 +400,12 @@ export default function StageComponent({ project }: { project: Project }) {
   }
 
   const handleSaveClick = async () => {
+
+    if (pathname === "/canvas") {
+      alert("ログインしていない場合は保存できません")
+      return;
+    }
+    
     setIsSaving(true);
     // console.log("resistances:", resistances)
     // console.log("lines:", lines)
@@ -432,6 +440,8 @@ export default function StageComponent({ project }: { project: Project }) {
     })
     console.log("latestCircuitElementsData:", latestCircuitElementsData)
     
+    let shouldRedirect = false;
+
     try {
       const response = await fetch(`http://localhost:4000/api/v1/projects/${project.id}/save_latest_circuit_elements_data`, {
         method: "POST",
@@ -443,12 +453,20 @@ export default function StageComponent({ project }: { project: Project }) {
         credentials: 'include',
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if(response.status === 401) {
+          // 今後この場でログインできるようにしたい(保存前の回路のデータが失われないような方法を要検討)
+          alert("セッションが切れました。トップページにリダイレクトします。");
+          shouldRedirect = true;
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
-      const data = await response.json();
-      // console.log("data:", data);
     } catch (error) {
       console.error("Error saving latest circuit elements data:", error);
+    }
+    
+    if (shouldRedirect) {
+      redirect("/api/auth/logout");
     }
     setIsSaving(false);
   }
@@ -601,7 +619,7 @@ export default function StageComponent({ project }: { project: Project }) {
         <button onClick={() => addDCPowerSupply()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">DC電源を追加</button>
         <button onClick={() => addCapacitor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">コンデンサを追加</button>
         <button onClick={() => addInductor()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">インダクタを追加</button>
-        <button className="cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600" onClick={handleSaveClick} disabled={isSaving}>
+        <button className={`cursor-pointer bg-blue-500 text-white p-2 mt-5 rounded-md hover:bg-blue-600 ${pathname === "/canvas" ? "hidden" : ""}`} onClick={handleSaveClick} disabled={isSaving}>
           {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
         </button>
         
