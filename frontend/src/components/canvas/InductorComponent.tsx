@@ -46,9 +46,11 @@ export default function InductorComponent({
       {/* 透明な背景領域（ドラッグエリア用） - 20%拡大 */}
       <Rect
         x={0}
-        y={0}
+        // y={0}
+        y={19} // ドラッグエリアの最適化のため0から19に修正した
         width={86.4}
-        height={72}
+        // height={72}
+        height={18} // ドラッグエリアの最適化のため72から18に修正した
         fill="transparent"
       />
       
