@@ -612,7 +612,12 @@ export default function StageComponent({ project }: { project: Project }) {
   return (
     <div className="flex">
       <div className="flex flex-col bg-gray-200 p-2 w-[15%]">
-        <Link href="/" className="text-lg text-center mb-4">Draw Circuit</Link>
+        {/* <Link href="/" className="text-lg text-center mb-4">Draw Circuit</Link> */}
+        <h1 className="text-xl font-bold tracking-tight text-slate-800 sm:text-2xl cursor-pointer text-center mb-4">
+          <Link href="/">
+            Draw Circuit
+          </Link>
+        </h1>
         <p className="text-lg font-bold">{project.name}</p>
         <button onClick={() => addResistance()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">抵抗を追加</button>
         <button onClick={() => addLine()} className="cursor-pointer bg-gray-500 text-white py-1 px-2 my-1 rounded-md hover:bg-gray-600">線を追加</button>
@@ -623,8 +628,8 @@ export default function StageComponent({ project }: { project: Project }) {
           {isSaving ? "保存中..." : "保存(Ctrl/⌘ + S)"}
         </button>
         
-        <p>Copy data: {JSON.stringify(copiedElementsData)}</p>
-        <p>Project data: {JSON.stringify(project.circuit_elements)}</p>
+        {/* <p>Copy data: {JSON.stringify(copiedElementsData)}</p>
+        <p>Project data: {JSON.stringify(project.circuit_elements)}</p> */}
       </div>
       {/* <div style={{ position: 'relative' }}> */}
       <div className="flex-1 w-[85%]" style={{ position: 'relative' }}>
