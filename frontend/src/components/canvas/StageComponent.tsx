@@ -487,10 +487,14 @@ export default function StageComponent({ project }: { project: Project }) {
         element_type: elementType,
         x_position: element.attrs.x,
         y_position: element.attrs.y,
-        start_x_position: elementType === "line" ? element.attrs.points[0] : null,
-        start_y_position: elementType === "line" ? element.attrs.points[1] : null,
-        end_x_position: elementType === "line" ? element.attrs.points[2] : null,
-        end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        // start_x_position: elementType === "line" ? element.attrs.points[0] : null,
+        // start_y_position: elementType === "line" ? element.attrs.points[1] : null,
+        // end_x_position: elementType === "line" ? element.attrs.points[2] : null,
+        // end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        start_x_position: elementType === "line" ? element.attrs.points[0] + (element.attrs.x ? element.attrs.x : 0) : null,
+        start_y_position: elementType === "line" ? element.attrs.points[1] + (element.attrs.y ? element.attrs.y : 0) : null,
+        end_x_position: elementType === "line" ? element.attrs.points[2] + (element.attrs.x ? element.attrs.x : 0) : null,
+        end_y_position: elementType === "line" ? element.attrs.points[3] + (element.attrs.y ? element.attrs.y : 0) : null,
         width: element.width(),
         height: element.height(),
         rotation: element.rotation(),
