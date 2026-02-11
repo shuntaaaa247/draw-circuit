@@ -1,6 +1,8 @@
 # $ docker compose run backend rails g controller api/v1/auth register loginで本コントローラーを作成
 
 class Api::V1::AuthController < ApplicationController
+  before_action :authenticate_user, only: [:check]
+
   def register
     user = User.new(user_params)
     if user.save
@@ -17,11 +19,16 @@ class Api::V1::AuthController < ApplicationController
     p "user: #{user}"
     p "params[:email]: #{params[:email]}"
     if user&.authenticate(params[:password]) # ぼっち演算子(x&.y)は、xがnilでない場合にのみメソッドyを呼び出し、xがnilの場合はnilを返す
-      token = encode_token(user_id: user.id, exp: 24.hours.from_now.to_i)
+      # token = encode_token(user_id: user.id, exp: 24.hours.from_now.to_i)
+      token = encode_token({ user_id: user.id, exp: 5.seconds.from_now.to_i }) # JWTを生成
       render json: { user: user.as_json(except: :password_digest), token: token }
     else
       render json: { error: "Invalid email or password" }, status: :unauthorized # シンボルunauthorizedは401 Unauthorizedを表す
     end
+  end
+
+  def check
+    render json: { is_logged_in: true }
   end
 
   private

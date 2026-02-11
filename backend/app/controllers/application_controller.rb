@@ -17,6 +17,7 @@ class ApplicationController < ActionController::API # ActionControllerモジュ�
     p "=======================current_user: #{current_user.inspect}======================="
   rescue JWT::DecodeError, ActiveRecord::RecordNotFound, JWT::ExpiredSignature # rescueはエラーが発生した場合に実行される
     # メソッドの中では、メソッド全体が暗黙的に begin ... end で囲まれているため、begin を省略して rescue だけ書ける
+    # authenticate_user内(すなわちdecoded_tokenやtokenメソッド)でエラーが発生した場合に次の行が実行され401 Unauthorizedを返す
     render json: { error: "Unauthorized" }, status: :unauthorized
   end
 
@@ -30,7 +31,7 @@ class ApplicationController < ActionController::API # ActionControllerモジュ�
 
   def decoded_token
     JWT.decode(
-      token, 
+      token, # nilの場合はエラーになる
       Rails.application.credentials.secret_key_base,
       true, # 署名検証を行う
       { algorithm: "HS256", verify_expiration: true } # アルゴリズムを指定
@@ -41,7 +42,8 @@ class ApplicationController < ActionController::API # ActionControllerモジュ�
     if request.headers["Authorization"].present?
       request.headers["Authorization"].split(" ").last
     elsif request.headers["Cookie"].present?
-      request.headers["Cookie"].split(";").find { |cookie| cookie.include?("token=") }.split("=").last
+      # httpOnlyでtokenをCookieごと送信している場合は、この行でtokenを取得する。 ここでtokenが見つからなかった場合はnilを返す
+      request.headers["Cookie"].split(";").find { |cookie| cookie.include?("token=") }&.split("=")&.last # セーフナビゲーション演算子(x&.y)は、xがnilでない場合にのみメソッドyを呼び出し、xがnilの場合はnilを返す
     else 
       nil
     end

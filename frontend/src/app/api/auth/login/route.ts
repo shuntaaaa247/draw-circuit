@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
   try {
     // console.log(`process.env.NEXT_PUBLIC_API_BASE_URL: ${process.env.NEXT_PUBLIC_API_BASE_URL}`);
-    const response = await fetch(`${apiUrl}/api/v1/login`, {
+    const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
