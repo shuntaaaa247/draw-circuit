@@ -152,7 +152,7 @@ export default function StageComponent({ project }: { project: Project }) {
     }
 
     
-  }, [selectedIds, copiedElementsData]); // copiedElementsDataも監視している(これがないとコピー後の初回ペーストができない)
+  }, [selectedIds, copiedElementsData, resistances, dcPowerSupplies, capacitors, inductors, lines]); // copiedElementsDataも監視している(これがないとコピー後の初回ペーストができない)
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -438,6 +438,7 @@ export default function StageComponent({ project }: { project: Project }) {
         rotation: element.rotation(),
       }
     })
+    console.log("elements:", elements)
     console.log("latestCircuitElementsData:", latestCircuitElementsData)
     
     let shouldRedirect = false;
