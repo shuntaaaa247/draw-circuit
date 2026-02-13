@@ -19,7 +19,7 @@ export default function StageComponent({ project }: { project: Project }) {
   const [capacitorCounter, setCapacitorCounter] = useState(0); // 消せる余地あり
   const [inductorCounter, setInductorCounter] = useState(0); // 消せる余地あり
   const [lineCounter, setLineCounter] = useState(0); // 消せる余地あり
-  const [resistances, setResistances] = useState<Konva.Rect[]>([]);
+  const [resistances, setResistances] = useState<Konva.Group[]>([]);
   const [dcPowerSupplies, setDcPowerSupplies] = useState<Konva.Group[]>([]);
   const [capacitors, setCapacitors] = useState<Konva.Group[]>([]);
   const [inductors, setInductors] = useState<Konva.Group[]>([]);
@@ -169,10 +169,10 @@ export default function StageComponent({ project }: { project: Project }) {
     if (!id) {
       setResistanceCounter(prevResistanceCounter => prevResistanceCounter + 1);
     }
-    const resistance = new Konva.Rect({
+    const resistance = new Konva.Group({
       x: x && y ? x : 100 + resistanceCounter * 10, // 重ならないように少しずらす
       y: y && y ? y : 100 + resistanceCounter * 10, // 中心座標に調整（y + height/2）
-      width: 70,
+      width: 106,
       height: 25,  
       id: `resistance-${id ? id : resistanceCounter + 1}`,
       rotation: rotation ? rotation : 0, // 回転角度を初期化
@@ -651,7 +651,7 @@ export default function StageComponent({ project }: { project: Project }) {
               // console.log("レジスタンス:", resistance),
               <ResistanceComponent 
                 key={resistance.id()} 
-                rect={resistance} 
+                group={resistance} 
                 isSelected={selectedIds.includes(resistance.id())} 
                 onResistanceClick={handleClick} 
                 onDragStart={handleDragStart}
