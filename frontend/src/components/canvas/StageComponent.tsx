@@ -11,6 +11,7 @@ import CapacitorComponent from "./CapacitorComponent";
 import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
 import { Project, CircuitElement } from "@/types";
+import { generateConnectionLinePoints } from "@/utils/linePoints";
 
 export default function StageComponent({ project }: { project: Project }) {
   const pathname = usePathname();
@@ -192,16 +193,21 @@ export default function StageComponent({ project }: { project: Project }) {
     const startPointY = startXPosition && startYPosition && endXPosition && endYPosition ? startYPosition : 100 + lines.length * 10;
     const endPointX = startXPosition && startYPosition && endXPosition && endYPosition ? endXPosition : startPointX + 100;
     const endPointY = startXPosition && startYPosition && endXPosition && endYPosition ? endYPosition : startPointY;
+
+    // 接続導線の場合は、折れ線になるように中間座標も指定する。ただの線の場合は、直線になるように座標を指定する。
+    const points = connectionFromId && connectionToId ? generateConnectionLinePoints(startPointX, startPointY, endPointX, endPointY) : [startPointX, startPointY, endPointX, endPointY];
     
     const line = new Konva.Line({
       // x: x && y ? x : 0,
       // y: y && y ? y : 0,
-      points: [startPointX, startPointY, endPointX, endPointY],
+      // points: [startPointX, startPointY, endPointX, endPointY],
+      points: points,
       // points: [startPointX + (x ? x : 0), startPointY + (y ? y : 0), endPointX + (x ? x : 0), endPointY + (y ? y : 0)],
       id: `line-${id ? id : lineCounter + 1}`,
       rotation: 0,
     });
 
+    // 接続導線の場合は、接続元と接続先のIDを設定する
     if(connectionFromId && connectionToId) {
       line.setAttrs({
         properties: {
@@ -284,7 +290,15 @@ export default function StageComponent({ project }: { project: Project }) {
       console.log("connectionFromId:", connectionFromId)
       console.log("connectionToId:", connectionToId)
       // 接続導線をLineとして追加する
-      addLine(undefined, undefined, selectedElements[0].x(), selectedElements[0].y(), selectedElements[1].x(), selectedElements[1].y(), undefined, connectionFromId, connectionToId);
+      // addLine(undefined, undefined, selectedElements[0].x(), selectedElements[0].y(), selectedElements[1].x(), selectedElements[1].y(), undefined, connectionFromId, connectionToId);
+
+      const fromX = selectedElements[0].x() + selectedElements[0].width() / 2;
+      const fromY = selectedElements[0].y();
+      const toX = selectedElements[1].x() - selectedElements[1].width() / 2;
+      const toY = selectedElements[1].y();
+      
+      addLine(undefined, undefined, fromX, fromY, toX, toY, undefined, connectionFromId, connectionToId);
+
       // 利便性のために選択状態をクリアする
       setSelectedIds([]);
     }
@@ -388,7 +402,7 @@ export default function StageComponent({ project }: { project: Project }) {
       }
     });
 
-    // ドラッグした要素が素子（線以外）の場合、その素子に接続されている導線の端点を現在位置に更新する
+    // ドラッグした要素が素子（線以外）の場合、その素子に接続されている導線の端点を現在位置に更新する(接続導線用の処理)
     if (!(draggedElementData instanceof Konva.Line)) {
       const allComponents = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors];
       lines.forEach((line) => {
@@ -400,7 +414,16 @@ export default function StageComponent({ project }: { project: Project }) {
         const toElement = allComponents.find((element) => element.id() === props.connectionToId);
         if (!fromElement || !toElement) return;
 
-        line.points([fromElement.x(), fromElement.y(), toElement.x(), toElement.y()]);
+        // line.points([fromElement.x(), fromElement.y(), toElement.x(), toElement.y()]);
+        // line.points([fromElement.x() + fromElement.width() / 2, fromElement.y(), toElement.x() - toElement.width() / 2, toElement.y()]);
+
+        const fromX = fromElement.x() + fromElement.width() / 2;
+        const fromY = fromElement.y();
+        const toX = toElement.x() - toElement.width() / 2;
+        const toY = toElement.y();
+        const points = generateConnectionLinePoints(fromX, fromY, toX, toY);
+        line.points(points);
+        // line.points([fromElement.x() + fromElement.width() / 2, fromElement.y(), (fromElement.x() + fromElement.width() / 2 + toElement.x() - toElement.width() / 2) / 2, (fromElement.y() + toElement.y()) / 2, (fromElement.x() + fromElement.width() / 2 + toElement.x() - toElement.width() / 2) / 2, (fromElement.y() + toElement.y()) / 2]);
       });
     }
 
@@ -794,7 +817,7 @@ export default function StageComponent({ project }: { project: Project }) {
                   style={{
                     position: 'absolute',
                     left: elementX + elementWidth / 2 + 10, // 中心基準での右端に調整
-                    top: elementY - elementHeight / 2 - 10, // 中心基準での上端に調整
+                    top: elementY - elementHeight / 2 - (selectedElement.id().includes("resistance") ? 30 : 10), // 中心基準での上端に調整
                     backgroundColor: '#3b82f6',
                     color: 'white',
                     border: 'none',
