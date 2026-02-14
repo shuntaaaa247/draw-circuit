@@ -181,7 +181,7 @@ export default function StageComponent({ project }: { project: Project }) {
     return resistance.id();
   }
 
-  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string): string => {
+  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string, connectionFromId?: string, connectionToId?: string): string => {
     // console.log("線を追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
@@ -201,6 +201,16 @@ export default function StageComponent({ project }: { project: Project }) {
       id: `line-${id ? id : lineCounter + 1}`,
       rotation: 0,
     });
+
+    if(connectionFromId && connectionToId) {
+      line.setAttrs({
+        properties: {
+          connectionFromId: connectionFromId,
+          connectionToId: connectionToId,
+        },
+      });
+    }
+
     setLines(prevLines => [...prevLines, line]);
     return line.id();
   }
@@ -265,6 +275,21 @@ export default function StageComponent({ project }: { project: Project }) {
     return inductor.id();
   }
 
+  const handleConnectClick = () => {
+    const selectedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter(element => selectedIds.includes(element.id()));
+    console.log("selectedElements:", selectedElements)
+    if (selectedElements.length === 2) {
+      const connectionFromId = selectedElements[0].id();
+      const connectionToId = selectedElements[1].id();
+      console.log("connectionFromId:", connectionFromId)
+      console.log("connectionToId:", connectionToId)
+      // 接続導線をLineとして追加する
+      addLine(undefined, undefined, selectedElements[0].x(), selectedElements[0].y(), selectedElements[1].x(), selectedElements[1].y(), undefined, connectionFromId, connectionToId);
+      // 利便性のために選択状態をクリアする
+      setSelectedIds([]);
+    }
+  }
+
   const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
     
     // console.log("x: " + event.target.x())
@@ -327,8 +352,6 @@ export default function StageComponent({ project }: { project: Project }) {
       return;
     }
 
-    console.log("あああ")
-
     const draggedElement = event.target;
     
     // 全ての要素配列を統合して、ドラッグされた要素を見つける
@@ -364,6 +387,22 @@ export default function StageComponent({ project }: { project: Project }) {
         // element.y(element.y() + Math.round(deltaY));
       }
     });
+
+    // ドラッグした要素が素子（線以外）の場合、その素子に接続されている導線の端点を現在位置に更新する
+    if (!(draggedElementData instanceof Konva.Line)) {
+      const allComponents = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors];
+      lines.forEach((line) => {
+        const props = line.getAttr("properties") as { connectionFromId?: string; connectionToId?: string } | undefined;
+        if (!props?.connectionFromId || !props?.connectionToId) return;
+        if (props.connectionFromId !== id && props.connectionToId !== id) return;
+
+        const fromElement = allComponents.find((element) => element.id() === props.connectionFromId);
+        const toElement = allComponents.find((element) => element.id() === props.connectionToId);
+        if (!fromElement || !toElement) return;
+
+        line.points([fromElement.x(), fromElement.y(), toElement.x(), toElement.y()]);
+      });
+    }
 
     // 各要素タイプの状態を更新
     setResistances([...resistances]);
@@ -771,6 +810,31 @@ export default function StageComponent({ project }: { project: Project }) {
               );
           }
           return null;
+        })()}
+
+        {/* 線以外のパーツが二つ選択されている場合に、接続ボタンを表示する */}
+        {selectedIds.length === 2 && !selectedIds[0].includes("line") && !selectedIds[1].includes("line") && (() => {
+          const selectedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter(element => selectedIds.includes(element.id()));
+          return (
+            <button
+              onClick={handleConnectClick}
+              style={{
+                position: 'absolute',
+                left: selectedElements[0].x() + selectedElements[0].width() / 2 + 10, // 中心基準での右端に調整
+                top: selectedElements[0].y() - selectedElements[0].height() / 2 - 10, // 中心基準での上端に調整
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                zIndex: 1000,
+              }}
+            >
+              接続
+            </button>
+          );
         })()}
       </div>
     </div>
