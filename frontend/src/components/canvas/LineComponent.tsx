@@ -6,6 +6,7 @@ import { Line, Circle, Group } from "react-konva";
 interface LineComponentProps {
   line: Konva.Line;
   isSelected: boolean;
+  // onLineClick: (id: string, event: Konva.KonvaEventObject<MouseEvent>, line?: Konva.Line) => void;
   onLineClick: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragStart: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragMove: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
@@ -64,6 +65,7 @@ export default function LineComponent({
         stroke={isSelected ? "red" : "black"}
         strokeWidth={isSelected ? 3 : 2}
         hitStrokeWidth={15} // クリック領域を15pxに拡張
+        // onClick={(event) => onLineClick(line.id(), event, line)}
         onClick={(event) => onLineClick(line.id(), event)}
         rotation={line.rotation()}
         onMouseEnter={handleMouseEnter}

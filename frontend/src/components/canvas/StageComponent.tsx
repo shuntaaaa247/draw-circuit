@@ -10,7 +10,8 @@ import DCPowerSupplyComponent from "./DCPowerSupplyComponent";
 import CapacitorComponent from "./CapacitorComponent";
 import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
-import { Project, CircuitElement } from "@/types";
+import { Project, CircuitElement, ConnectionInfo } from "@/types";
+import { getElementConnectionLines, trackConnectionLine } from "../../utils/stage/connectionLine";
 
 export default function StageComponent({ project }: { project: Project }) {
   const pathname = usePathname();
@@ -19,11 +20,13 @@ export default function StageComponent({ project }: { project: Project }) {
   const [capacitorCounter, setCapacitorCounter] = useState(0); // 消せる余地あり
   const [inductorCounter, setInductorCounter] = useState(0); // 消せる余地あり
   const [lineCounter, setLineCounter] = useState(0); // 消せる余地あり
+  const [connectionLineCounter, setConnectionLineCounter] = useState(0); // 消せる余地あり
   const [resistances, setResistances] = useState<Konva.Group[]>([]);
   const [dcPowerSupplies, setDcPowerSupplies] = useState<Konva.Group[]>([]);
   const [capacitors, setCapacitors] = useState<Konva.Group[]>([]);
   const [inductors, setInductors] = useState<Konva.Group[]>([]);
   const [lines, setLines] = useState<Konva.Line[]>([]);
+  const [connectionLines, setConnectionLines] = useState<Konva.Line[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pointerPosition, setPointerPosition] = useState<{x: number, y: number}>({x: 0, y: 0}); 
   const [isSaving, setIsSaving] = useState(false);
@@ -39,7 +42,7 @@ export default function StageComponent({ project }: { project: Project }) {
   });
   const isSelecting = useRef(false); // 範囲選択中かどうかを管理するためのref
   const isDraggingLineControlPoint = useRef(false); // Lineの制御点をドラッグしているかどうかを管理するためのref
-
+  
   useEffect(() => {
     // console.log("project.circuit_elements:", project.circuit_elements)
     
@@ -62,27 +65,29 @@ export default function StageComponent({ project }: { project: Project }) {
     let _dcPowerSupplyCounter = 0;
     let _capacitorCounter = 0;
     let _inductorCounter = 0;
-    
+
     project.circuit_elements.forEach((element: CircuitElement) => {
+      let konvaElement: Konva.Group = new Konva.Group();
+
       if (element.element_type === "resistance") {
         _resistanceCounter++
-        addResistance(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_resistanceCounter}-loaded`)
+        konvaElement = addResistance(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_resistanceCounter}-loaded`)
       } 
       else if (element.element_type === "line") {
         _lineCounter++
         addLine(Number(element.x_position), Number(element.y_position), Number(element.start_x_position), Number(element.start_y_position), Number(element.end_x_position), Number(element.end_y_position), `${_lineCounter}-loaded`)
       } else if (element.element_type === "dc_power_supply") {
         _dcPowerSupplyCounter++
-        addDCPowerSupply(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_dcPowerSupplyCounter}-loaded`)
+        konvaElement = addDCPowerSupply(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_dcPowerSupplyCounter}-loaded`)
       } else if (element.element_type === "capacitor") {
         _capacitorCounter++
-        addCapacitor(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_capacitorCounter}-loaded`)
+        konvaElement = addCapacitor(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_capacitorCounter}-loaded`)
       } else if (element.element_type === "inductor") {
         _inductorCounter++
-        addInductor(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_inductorCounter}-loaded`)
+        konvaElement = addInductor(Number(element.x_position), Number(element.y_position), Number(element.rotation), `${_inductorCounter}-loaded`)
       }
     })
-    
+
     // 保存されていた要素をセットし終わったら、カウンターをセットする
     setResistanceCounter(_resistanceCounter);
     setLineCounter(_lineCounter);
@@ -103,6 +108,7 @@ export default function StageComponent({ project }: { project: Project }) {
       setCapacitors(prevCapacitors => prevCapacitors.filter((capacitor) => !selectedIds.includes(capacitor.id())));
       setInductors(prevInductors => prevInductors.filter((inductor) => !selectedIds.includes(inductor.id())));
       setLines(prevLines => prevLines.filter((line) => !selectedIds.includes(line.id())));
+      setConnectionLines(prevConnectionLines => prevConnectionLines.filter((connectionLine) => !selectedIds.includes(connectionLine.id())));
       setSelectedIds([]);
     }
 
@@ -127,7 +133,7 @@ export default function StageComponent({ project }: { project: Project }) {
     // 方向キーが押された場合は、選択された要素を移動する
     if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
       // console.log(e.key + "が押されました")
-      const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
+      const allElements = getAllElements();
       const selectedElements = allElements.filter((element) => selectedIds.includes(element.id()));
       selectedElements.forEach((element) => {
         if (e.key === "ArrowUp" || e.key === "ArrowDown") { // 上矢印もしくは下矢印が押された場合
@@ -163,7 +169,7 @@ export default function StageComponent({ project }: { project: Project }) {
     };
   }, [handleKeyDown]);
 
-  const addResistance = (x?: number, y?: number, rotation?: number, id?: string): string => { // idはデータベースのidで初期ロードでデータベース上の素子を描画するときはこのidを使用する
+  const addResistance = (x?: number, y?: number, rotation?: number, id?: string): Konva.Group => { // idはデータベースのidで初期ロードでデータベース上の素子を描画するときはこのidを使用する
     // console.log("レジスタンスを追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
@@ -176,12 +182,14 @@ export default function StageComponent({ project }: { project: Project }) {
       height: 25,  
       id: `resistance-${id ? id : resistanceCounter + 1}`,
       rotation: rotation ? rotation : 0, // 回転角度を初期化
+      properties: {
+      },
     });
     setResistances(prevResistances => [...prevResistances, resistance]);
-    return resistance.id();
+    return resistance;
   }
 
-  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string): string => {
+  const addLine = (x?: number, y?: number, startXPosition?: number, startYPosition?: number, endXPosition?: number, endYPosition?: number, id?: string): Konva.Line => {
     // console.log("線を追加します")
     // 新しく追加する要素の場合は、カウンターを先にインクリメント
     if (!id) {
@@ -202,10 +210,10 @@ export default function StageComponent({ project }: { project: Project }) {
       rotation: 0,
     });
     setLines(prevLines => [...prevLines, line]);
-    return line.id();
+    return line;
   }
 
-  const addDCPowerSupply = (x?: number, y?: number, rotation?: number, id?: string): string => {
+  const addDCPowerSupply = (x?: number, y?: number, rotation?: number, id?: string): Konva.Group => {
     // console.log("DC電源を追加します")
     if (!id) {
       setDcPowerSupplyCounter(prevDcPowerSupplyCounter => prevDcPowerSupplyCounter + 1);
@@ -220,12 +228,14 @@ export default function StageComponent({ project }: { project: Project }) {
       height: 60,
       rotation: rotation ? rotation : 0,
       id: `dcPowerSupply-${id ? id : dcPowerSupplyCounter + 1}`,
+      properties: {
+      },
     });
     setDcPowerSupplies(prevDcPowerSupplies => [...prevDcPowerSupplies, dcPowerSupply]);
-    return dcPowerSupply.id();
+    return dcPowerSupply;
   }
 
-  const addCapacitor = (x?: number, y?: number, rotation?: number, id?: string): string => {
+  const addCapacitor = (x?: number, y?: number, rotation?: number, id?: string): Konva.Group => {
     // console.log("コンデンサを追加します")
     if (!id) {
       setCapacitorCounter(prevCapacitorCounter => prevCapacitorCounter + 1);
@@ -240,12 +250,14 @@ export default function StageComponent({ project }: { project: Project }) {
       height: 60,
       rotation: rotation ? rotation : 0,
       id: `capacitor-${id ? id : capacitorCounter + 1}`,
+      properties: {
+      },
     });
     setCapacitors(prevCapacitors => [...prevCapacitors, capacitor]);
-    return capacitor.id();
+    return capacitor;
   }
 
-  const addInductor = (x?: number, y?: number, rotation?: number, id?: string): string => {
+  const addInductor = (x?: number, y?: number, rotation?: number, id?: string): Konva.Group => {
     // console.log("インダクタを追加します")
     if (!id) {
       setInductorCounter(prevInductorCounter => prevInductorCounter + 1);
@@ -260,23 +272,70 @@ export default function StageComponent({ project }: { project: Project }) {
       height: 72,  // 20%拡大: 60 * 1.2
       rotation: rotation ? rotation : 0,
       id: `inductor-${id ? id : inductorCounter + 1}`,
+      properties: {
+      },
     });
     setInductors(prevInductors => [...prevInductors, inductor]);
-    return inductor.id();
+    // return inductor.id();
+    return inductor;
   }
 
-  const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>) => {
-    
-    // console.log("x: " + event.target.x())
-    // console.log("y: " + event.target.y())
-    // console.log("width: " + event.target.width())
-    // console.log("height: " + event.target.height())
-    // console.log("rotation: " + event.target.rotation())
-    // console.log("id: " + event.target.id())
-    // console.log("points: " + (event.target instanceof Konva.Line ? event.target.points() : "Not Line"))
+  //  仮実装
+  // const addConnectionLine = (from: CircuitElement, to: CircuitElement): Konva.Line => {
+  const addConnectionLine = (elementA: Konva.Group, elementB: Konva.Group, preDefinedConnectionLineId?: string): Konva.Line => {
+    // console.log("接続線を追加します")
+    setConnectionLineCounter(prevConnectionLineCounter => prevConnectionLineCounter + 1);
 
+    const points = !elementA.attrs.x || !elementA.attrs.y || !elementB.attrs.x || !elementB.attrs.y 
+      ? [0, 0, 0, 0] 
+      : [
+        elementA.attrs.x + (elementA.attrs.properties.connectionInfos[0].myTerminal === 0 ? -1 : 1) * elementA.attrs.width / 2,
+        elementA.attrs.y,
+        elementB.attrs.x + (elementB.attrs.properties.connectionInfos[0].myTerminal === 0 ? -1 : 1) * elementB.attrs.width / 2,
+        elementB.attrs.y
+      ]
+    
+    const connectionLine = new Konva.Line({
+      points: points,
+
+      id: preDefinedConnectionLineId ? preDefinedConnectionLineId : `connectionLine-${connectionLineCounter + 1}`,
+      rotation: 0,
+      pairElementInfo: {
+        elementA: {
+          id: elementA.id(),
+          terminal: elementA.attrs.properties.connectionInfos[0].myTerminal,
+        },
+        elementB: {
+          id: elementB.id(),
+          terminal: elementB.attrs.properties.connectionInfos[0].myTerminal,
+        }
+      },
+    });
+    setConnectionLines(prevConnectionLines => [...prevConnectionLines, connectionLine]);
+    return connectionLine;
+  }
+
+  const getAllElements = () => {
+    return [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines, ...connectionLines];
+  }
+
+  const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>, element?: Konva.Group | Konva.Line) => {
+    
     // ただクリックした場合は選択状態の要素をクリックされた要素のみにする
     setSelectedIds([id]);
+
+    // ただクリックした場合
+    // クリックされた要素と、その要素に接続されている接続線も選択状態にする(とりあえず実装しようとしたが、後のコミットで実装したい)
+    // if (element instanceof Konva.Group) {
+    //   const elementConnectionLines = getElementConnectionLines(element, connectionLines);
+    //   console.log("わっしょいconnectionLines:", elementConnectionLines);
+    //   const elementConnectionLineIds = elementConnectionLines.map((elementConnectionLine) => {
+    //     return elementConnectionLine.id()
+    //   })
+    //   setSelectedIds([id, ...elementConnectionLineIds])
+      
+    // }
+
 
     // シフトキーを押している場合は、選択状態の要素にシフトクリックされた要素を追加する
     if (event.evt.shiftKey) {
@@ -297,7 +356,7 @@ export default function StageComponent({ project }: { project: Project }) {
 
   const rotateSelectedElement = () => {
     if (selectedIds.length === 1) {
-      const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
+      const allElements = getAllElements();
       const selectedElement = allElements.find((element) => element.id() === selectedIds[0]);
       if (selectedElement) {
         selectedElement.rotation(selectedElement.rotation() + 45);
@@ -332,7 +391,7 @@ export default function StageComponent({ project }: { project: Project }) {
     const draggedElement = event.target;
     
     // 全ての要素配列を統合して、ドラッグされた要素を見つける
-    const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
+    const allElements = getAllElements();
     const draggedElementData = allElements.find((element) => element.id() === id);
     
     if (!draggedElementData) return;
@@ -342,7 +401,7 @@ export default function StageComponent({ project }: { project: Project }) {
     const deltaY = draggedElement.y() - draggedElementData.y();
 
     // 選択されている要素（ドラッグした要素を含まない）をすべて同じ量だけ移動
-    const elementsToMove = selectedIds.includes(id) ? 
+    const elementsToMoveTogether = selectedIds.includes(id) ? 
       allElements.filter((element) => selectedIds.includes(element.id()) && element.id() !== id) :
       [];
 
@@ -351,7 +410,7 @@ export default function StageComponent({ project }: { project: Project }) {
     draggedElementData.y(draggedElement.y());
 
     // 他の選択された要素も同じ量だけ移動
-    elementsToMove.forEach((element) => {
+    elementsToMoveTogether.forEach((element) => {
       // element.x(element.x() + deltaX);
       // element.y(element.y() + deltaY);
       if (element instanceof Konva.Line) {
@@ -365,12 +424,17 @@ export default function StageComponent({ project }: { project: Project }) {
       }
     });
 
+
+    // 接続線が自動追従するようにする
+    trackConnectionLine([draggedElementData, ...elementsToMoveTogether], selectedIds, connectionLines, deltaX, deltaY);
+
     // 各要素タイプの状態を更新
     setResistances([...resistances]);
     setDcPowerSupplies([...dcPowerSupplies]);
     setCapacitors([...capacitors]);
     setInductors([...inductors]);
     setLines([...lines]);
+    setConnectionLines([...connectionLines]);
   }
   
   // テスト用
@@ -531,25 +595,25 @@ export default function StageComponent({ project }: { project: Project }) {
     copiedElementsData.forEach((element) => {
       if (element.element_type === "resistance") {
         _resistanceCounter++
-        const id = addResistance(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_resistanceCounter}`)
+        const id = addResistance(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_resistanceCounter}`).id()
         pastedElementIds.push(id);
       } 
       else if (element.element_type === "line") {
         _lineCounter++
-        const id = addLine(Number(element.x_position), Number(element.y_position), Number(element.start_x_position) + 5*(pasteCounter+1), Number(element.start_y_position) + 5*(pasteCounter+1), Number(element.end_x_position) + 5*(pasteCounter+1), Number(element.end_y_position) + 5*(pasteCounter+1), `${_lineCounter}`)
+        const id = addLine(Number(element.x_position), Number(element.y_position), Number(element.start_x_position) + 5*(pasteCounter+1), Number(element.start_y_position) + 5*(pasteCounter+1), Number(element.end_x_position) + 5*(pasteCounter+1), Number(element.end_y_position) + 5*(pasteCounter+1), `${_lineCounter}`).id()
         // const id = addLine(undefined, undefined, Number(element.start_x_position) + 5*(pasteCounter+1), Number(element.start_y_position) + 5*(pasteCounter+1), Number(element.end_x_position) + 5*(pasteCounter+1), Number(element.end_y_position) + 5*(pasteCounter+1), `${_lineCounter}`)
         pastedElementIds.push(id);
       } else if (element.element_type === "dc_power_supply") {
         _dcPowerSupplyCounter++
-        const id = addDCPowerSupply(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_dcPowerSupplyCounter}`)
+        const id = addDCPowerSupply(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_dcPowerSupplyCounter}`).id()
         pastedElementIds.push(id);
       } else if (element.element_type === "capacitor") {
         _capacitorCounter++
-        const id = addCapacitor(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_capacitorCounter}`)
+        const id = addCapacitor(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_capacitorCounter}`).id()
         pastedElementIds.push(id);
       } else if (element.element_type === "inductor") {
         _inductorCounter++
-        const id = addInductor(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_inductorCounter}`)
+        const id = addInductor(Number(element.x_position) + 5*(pasteCounter+1), Number(element.y_position) + 5*(pasteCounter+1), Number(element.rotation), `${_inductorCounter}`).id()
         pastedElementIds.push(id);
       }
     })
@@ -607,12 +671,37 @@ export default function StageComponent({ project }: { project: Project }) {
       height: Math.abs(selectionRectangle.y2 - selectionRectangle.y1),
     };
   
-    const selectedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter(element => { // 範囲選択の矩形と交差する要素を取得
+    const selectedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines, ...connectionLines].filter(element => { // 範囲選択の矩形と交差する要素を取得
       return Konva.Util.haveIntersection(selBox, element.getClientRect()); // 範囲選択の矩形と要素が交差するかどうかを返す
     });
   
     setSelectedIds(selectedElements.map(element => element.id())); // 選択された要素のidをセット
   };
+
+  const handleConnectClick = () => {
+    const selectedElementsWithoutLines = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors].filter(element => selectedIds.includes(element.id()));
+    if (selectedElementsWithoutLines.length !== 2) return;
+  
+    const elementA = selectedElementsWithoutLines[0];
+    const elementB = selectedElementsWithoutLines[1];
+
+    // 便宜上事前に接続線のidを決めておく
+    const preDefinedConnectionLineId = `connectionLine-${connectionLineCounter + 1}`;
+
+    // 接続情報を素子に保存する
+    const elementAConnectionInfos: ConnectionInfo[] = elementA.attrs.properties.connectionInfos || [];
+    elementAConnectionInfos.push({pairElementId: elementB.id(), myTerminal: 1, pairTerminal: 0, connectionLineId: preDefinedConnectionLineId}); // とりあえず、myTerminalは1、pairTerminalは0にしている
+    elementA.setAttrs({properties: {...elementA.attrs.properties, connectionInfos: elementAConnectionInfos}});
+
+    const elementBConnectionInfos: ConnectionInfo[] = elementB.attrs.properties.connectionInfos || [];
+    elementBConnectionInfos.push({pairElementId: elementA.id(), myTerminal: 0, pairTerminal: 1, connectionLineId: preDefinedConnectionLineId}); // とりあえず、myTerminalは0、pairTerminalは1にしている
+    elementB.setAttrs({properties: {...elementB.attrs.properties, connectionInfos: elementBConnectionInfos}});
+
+    // 接続線を追加する
+    addConnectionLine(elementA, elementB, preDefinedConnectionLineId);
+    // 便宜上、接続ボタンを押したら選択状態をクリアする
+    setSelectedIds([]);
+  } 
 
   return (
     <div className="flex">
@@ -705,6 +794,19 @@ export default function StageComponent({ project }: { project: Project }) {
                 onInductorClick={handleClick}
               />
             ))}
+            {connectionLines.map((connectionLine) => ( // 仮実装
+              <LineComponent
+                key={connectionLine.id()}
+                line={connectionLine}
+                isSelected={selectedIds.includes(connectionLine.id())}
+                onLineClick={handleClick}
+                onDragStart={handleDragStart}
+                onDragMove={handleElementDragMove}
+                onLineResize={handleLineResize}
+                numOfSelectedIds={selectedIds.length}
+                isDraggingLineControlPoint={isDraggingLineControlPoint}
+              />
+            ))}
             {selectionRectangle.visible && ( // 範囲選択中に選択範囲を表示する
               <Rect // 範囲選択の矩形
                 x={Math.min(selectionRectangle.x1, selectionRectangle.x2)}
@@ -719,8 +821,8 @@ export default function StageComponent({ project }: { project: Project }) {
         
         {/* 選択された要素が1つの場合に回転ボタンを表示 */}
         {/* {selectedIds.length === 1 && (() => { */}
-        {selectedIds.length === 1 && !selectedIds[0].includes("line") && (() => {
-          const allElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines];
+        {selectedIds.length === 1 && (!selectedIds[0].includes("line") && !selectedIds[0].includes("connectionLine")) && (() => {
+          const allElements = getAllElements();
           const selectedElement = allElements.find((element) => element.id() === selectedIds[0]);
           if (selectedElement) {
             // 要素のサイズを取得（Rect用のwidth/heightまたはGroup用のgetClientRect、Line用の特別処理）
@@ -740,13 +842,14 @@ export default function StageComponent({ project }: { project: Project }) {
               elementX = selectedElement.x();
               elementY = selectedElement.y();
             } else {
-              // Line要素の場合は中心座標を使用
-              const lineElement = selectedElement as Konva.Line;
-              const points = lineElement.points();
-              elementWidth = Math.abs(points[2] - points[0]);
-              elementHeight = Math.abs(points[3] - points[1]);
-              elementX = selectedElement.x(); // 既に中心座標
-              elementY = selectedElement.y(); // 既に中心座標
+              // // Line要素の場合は中心座標を使用
+              // const lineElement = selectedElement as Konva.Line;
+              // const points = lineElement.points();
+              // elementWidth = Math.abs(points[2] - points[0]);
+              // elementHeight = Math.abs(points[3] - points[1]);
+              // elementX = selectedElement.x(); // 既に中心座標
+              // elementY = selectedElement.y(); // 既に中心座標
+              return
             }
             
               return (
@@ -771,6 +874,32 @@ export default function StageComponent({ project }: { project: Project }) {
               );
           }
           return null;
+        })()}
+
+        {/* 線以外のパーツが二つ選択されている場合に、接続ボタンを表示する */}
+        {selectedIds.length === 2 && !selectedIds[0].includes("line") && !selectedIds[1].includes("line") && !selectedIds[0].includes("connnectionLine") && !selectedIds[1].includes("connectionLine") && (() => {
+          const selectedElements = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines].filter(element => selectedIds.includes(element.id()));
+          return (
+            <button
+              // onClick={handleConnectClick}
+              onClick={handleConnectClick}
+              style={{
+                position: 'absolute',
+                left: selectedElements[0].x() + selectedElements[0].width() / 2 + 10, // 中心基準での右端に調整
+                top: selectedElements[0].y() - selectedElements[0].height() / 2 - 10, // 中心基準での上端に調整
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                zIndex: 1000,
+              }}
+            >
+              接続
+            </button>
+          );
         })()}
       </div>
     </div>

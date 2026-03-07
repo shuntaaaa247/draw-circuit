@@ -19,7 +19,16 @@ type CircuitElement = {
   start_y_position?: number;
   end_x_position?: number;
   end_y_position?: number;
-  properties?: object;
+  properties?: {
+    connectionInfos?: ConnectionInfo[]; // 接続先の要素のIDと接続端番号を保存する
+  };
 }
 
-export type { Project, CircuitElement, NewProjectInput }
+type ConnectionInfo = {
+  pairElementId: string;
+  myTerminal: number;
+  pairTerminal: number;
+  connectionLineId?: string;
+}
+
+export type { Project, CircuitElement, NewProjectInput, ConnectionInfo }

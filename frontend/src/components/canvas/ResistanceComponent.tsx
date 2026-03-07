@@ -4,6 +4,7 @@ import { Group, Rect, Line } from "react-konva";
 interface ResistanceComponentProps {
   group: Konva.Group;
   isSelected: boolean;
+  // onResistanceClick: (id: string, event: Konva.KonvaEventObject<MouseEvent>, registance?: Konva.Group) => void;
   onResistanceClick: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragStart: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragMove: (id: string, event: Konva.KonvaEventObject<MouseEvent>) => void;
@@ -58,6 +59,7 @@ export default function ResistanceComponent({ group, isSelected, onResistanceCli
       draggable={true} 
       // fill={"white"} 
       id={group.id()} 
+      // onClick={(event) => onResistanceClick(group.id(), event, group)} 
       onClick={(event) => onResistanceClick(group.id(), event)} 
       onDragStart={(event) => onDragStart(group.id(), event)}
       onDragMove={(event) => onDragMove(group.id(), event)}
