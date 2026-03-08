@@ -3,6 +3,22 @@
 import Konva from "konva";
 import { ConnectionInfo } from "../../types/index";
 
+// 追加する接続線の情報を接続先の要素に追加する
+export const addConnectionInfo = (
+  elementA: Konva.Group,
+  elementB: Konva.Group, 
+  connectionLineId: string
+) => {
+  // 接続情報を素子に保存する
+  const elementAConnectionInfos: ConnectionInfo[] = elementA.attrs.properties.connectionInfos || [];
+  elementAConnectionInfos.push({pairElementId: elementB.id(), myTerminal: 1, pairTerminal: 0, connectionLineId: connectionLineId}); // とりあえず、myTerminalは1、pairTerminalは0にしている
+  elementA.setAttrs({properties: {...elementA.attrs.properties, connectionInfos: elementAConnectionInfos}});
+
+  const elementBConnectionInfos: ConnectionInfo[] = elementB.attrs.properties.connectionInfos || [];
+  elementBConnectionInfos.push({pairElementId: elementA.id(), myTerminal: 0, pairTerminal: 1, connectionLineId: connectionLineId}); // とりあえず、myTerminalは0、pairTerminalは1にしている
+  elementB.setAttrs({properties: {...elementB.attrs.properties, connectionInfos: elementBConnectionInfos}});
+}
+
 export const getElementConnectionLines = (element: Konva.Group, connectionLines: Konva.Line[]): Konva.Line[] => {
   const connectionInfos = element.attrs.properties?.connectionInfos;
   if (!connectionInfos) {

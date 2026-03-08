@@ -11,7 +11,7 @@ import CapacitorComponent from "./CapacitorComponent";
 import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
 import { Project, CircuitElement, ConnectionInfo } from "@/types";
-import { getElementConnectionLines, trackConnectionLine } from "../../utils/stage/connectionLine";
+import { addConnectionInfo, getElementConnectionLines, trackConnectionLine } from "../../utils/stage/connectionLine";
 
 export default function StageComponent({ project }: { project: Project }) {
   const pathname = usePathname();
@@ -679,26 +679,23 @@ export default function StageComponent({ project }: { project: Project }) {
   };
 
   const handleConnectClick = () => {
-    const selectedElementsWithoutLines = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors].filter(element => selectedIds.includes(element.id()));
-    if (selectedElementsWithoutLines.length !== 2) return;
-  
-    const elementA = selectedElementsWithoutLines[0];
-    const elementB = selectedElementsWithoutLines[1];
+    const selectedElementsOtherThanLines = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors].filter(element => selectedIds.includes(element.id()));
+
+    // 選択されている要素が2個の時のみ接続を許可する
+    if (selectedElementsOtherThanLines.length !== 2) return;
+
+    // 接続先の要素を2つ取得する
+    const elementA = selectedElementsOtherThanLines[0];
+    const elementB = selectedElementsOtherThanLines[1];
 
     // 便宜上事前に接続線のidを決めておく
-    const preDefinedConnectionLineId = `connectionLine-${connectionLineCounter + 1}`;
+    const predefinedConnectionLineId = `connectionLine-${connectionLineCounter + 1}`;
 
-    // 接続情報を素子に保存する
-    const elementAConnectionInfos: ConnectionInfo[] = elementA.attrs.properties.connectionInfos || [];
-    elementAConnectionInfos.push({pairElementId: elementB.id(), myTerminal: 1, pairTerminal: 0, connectionLineId: preDefinedConnectionLineId}); // とりあえず、myTerminalは1、pairTerminalは0にしている
-    elementA.setAttrs({properties: {...elementA.attrs.properties, connectionInfos: elementAConnectionInfos}});
-
-    const elementBConnectionInfos: ConnectionInfo[] = elementB.attrs.properties.connectionInfos || [];
-    elementBConnectionInfos.push({pairElementId: elementA.id(), myTerminal: 0, pairTerminal: 1, connectionLineId: preDefinedConnectionLineId}); // とりあえず、myTerminalは0、pairTerminalは1にしている
-    elementB.setAttrs({properties: {...elementB.attrs.properties, connectionInfos: elementBConnectionInfos}});
+    // 接続先の要素に接続情報を付与する
+    addConnectionInfo(elementA, elementB, predefinedConnectionLineId); 
 
     // 接続線を追加する
-    addConnectionLine(elementA, elementB, preDefinedConnectionLineId);
+    addConnectionLine(elementA, elementB, predefinedConnectionLineId);
     // 便宜上、接続ボタンを押したら選択状態をクリアする
     setSelectedIds([]);
   } 
