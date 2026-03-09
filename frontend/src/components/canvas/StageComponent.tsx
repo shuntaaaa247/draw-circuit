@@ -11,7 +11,8 @@ import CapacitorComponent from "./CapacitorComponent";
 import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
 import { Project, CircuitElement, ConnectionInfo } from "@/types";
-import { addConnectionInfo, getElementConnectionLines, trackConnectionLine } from "../../utils/stage/connectionLine";
+import { addConnectionInfo, getElementConnectionLines, trackConnectionLine, updateConnectionLinePoints } from "../../utils/stage/connectionLine";
+import { getTerminalPoints } from "@/utils/stage/elementCommon";
 
 export default function StageComponent({ project }: { project: Project }) {
   const pathname = usePathname();
@@ -185,6 +186,11 @@ export default function StageComponent({ project }: { project: Project }) {
       properties: {
       },
     });
+
+    resistance.attrs.terminalPoints = () => {
+      return getTerminalPoints(resistance);
+    }
+
     setResistances(prevResistances => [...prevResistances, resistance]);
     return resistance;
   }
@@ -231,6 +237,11 @@ export default function StageComponent({ project }: { project: Project }) {
       properties: {
       },
     });
+
+    dcPowerSupply.attrs.terminalPoints = () => {
+      return getTerminalPoints(dcPowerSupply);
+    }
+
     setDcPowerSupplies(prevDcPowerSupplies => [...prevDcPowerSupplies, dcPowerSupply]);
     return dcPowerSupply;
   }
@@ -253,6 +264,11 @@ export default function StageComponent({ project }: { project: Project }) {
       properties: {
       },
     });
+
+    capacitor.attrs.terminalPoints = () => {
+      return getTerminalPoints(capacitor);
+    }
+
     setCapacitors(prevCapacitors => [...prevCapacitors, capacitor]);
     return capacitor;
   }
@@ -275,6 +291,11 @@ export default function StageComponent({ project }: { project: Project }) {
       properties: {
       },
     });
+
+    inductor.attrs.terminalPoints = () => {
+      return getTerminalPoints(inductor);
+    }
+
     setInductors(prevInductors => [...prevInductors, inductor]);
     // return inductor.id();
     return inductor;
@@ -286,13 +307,15 @@ export default function StageComponent({ project }: { project: Project }) {
     // console.log("接続線を追加します")
     setConnectionLineCounter(prevConnectionLineCounter => prevConnectionLineCounter + 1);
 
+    const elementATerminalPoints = elementA.attrs.terminalPoints();
+    const elementBTerminalPoints = elementB.attrs.terminalPoints();
     const points = !elementA.attrs.x || !elementA.attrs.y || !elementB.attrs.x || !elementB.attrs.y 
       ? [0, 0, 0, 0] 
       : [
-        elementA.attrs.x + (elementA.attrs.properties.connectionInfos[0].myTerminal === 0 ? -1 : 1) * elementA.attrs.width / 2,
-        elementA.attrs.y,
-        elementB.attrs.x + (elementB.attrs.properties.connectionInfos[0].myTerminal === 0 ? -1 : 1) * elementB.attrs.width / 2,
-        elementB.attrs.y
+        elementATerminalPoints[1].x,
+        elementATerminalPoints[1].y,
+        elementBTerminalPoints[0].x,
+        elementBTerminalPoints[0].y
       ]
     
     const connectionLine = new Konva.Line({
@@ -354,19 +377,58 @@ export default function StageComponent({ project }: { project: Project }) {
     }
   }
 
-  const rotateSelectedElement = () => {
-    if (selectedIds.length === 1) {
-      const allElements = getAllElements();
-      const selectedElement = allElements.find((element) => element.id() === selectedIds[0]);
-      if (selectedElement) {
-        selectedElement.rotation(selectedElement.rotation() + 45);
-        // 各要素タイプの状態を更新
-        setResistances([...resistances]);
-        setDcPowerSupplies([...dcPowerSupplies]);
-        setCapacitors([...capacitors]);
-        setInductors([...inductors]);
-        setLines([...lines]);
-      }
+  const handleRotateClick = () => {
+    if (selectedIds.length !== 1) return;
+
+    const allElements = getAllElements();
+    const element = allElements.find((element) => element.id() === selectedIds[0]);
+
+    if (!element || !(element instanceof Konva.Group)) return;
+
+    // 回転させる
+    const rotatedElement = element.rotation(element.rotation() + 45); // 左辺の変数は、本関数下部の接続線の座標の修正処理にて、値参照として用いる
+
+    // 各要素タイプの状態を更新
+    setResistances([...resistances]);
+    setDcPowerSupplies([...dcPowerSupplies]);
+    setCapacitors([...capacitors]);
+    setInductors([...inductors]);
+    setLines([...lines]);
+
+    // 回転させる要素が線、接続線以外であれば、その要素の回転時に接続線の座標をターミナルの座標に合わせるように修正する
+    if (element instanceof Konva.Group) {
+      // 座標を修正するべき(回転させる要素に接続している)connectionLineを取得する
+      const elementConnectionLines = getElementConnectionLines(element, connectionLines);
+      console.log("elementConnectionLines:", elementConnectionLines);
+
+      // 回転させた後の要素のターミナルの座標を取得
+      const newTerminalPoints = rotatedElement.attrs.terminalPoints();
+      console.log("newTerminalPoints:", newTerminalPoints)
+
+      // 回転させた要素elementの接続線の座標を1本ずつ更新する
+      elementConnectionLines.forEach((connectionLine) => {
+        // 接続線の両端に接続した要素elementA,elementBを取得
+        const elementA = connectionLine.attrs.pairElementInfo?.elementA;
+        const elementB = connectionLine.attrs.pairElementInfo?.elementB;
+        if (!elementA || !elementB) return;
+
+        const allElements = getAllElements();
+        const _elementA = allElements.find((_element) => _element.id() === elementA.id);
+        const _elementB = allElements.find((_element) => _element.id() === elementB.id);
+        if (!_elementA || !_elementB) return;
+
+        const elementATerminalPoints = _elementA.attrs.terminalPoints();
+        const elementBTerminalPoints = _elementB.attrs.terminalPoints();
+
+        connectionLine.points(
+          [
+            elementATerminalPoints[1].x,
+            elementATerminalPoints[1].y,
+            elementBTerminalPoints[0].x,
+            elementBTerminalPoints[0].y
+          ]
+        )
+      })
     }
   }
 
@@ -851,7 +913,7 @@ export default function StageComponent({ project }: { project: Project }) {
             
               return (
                 <button
-                  onClick={rotateSelectedElement}
+                  onClick={handleRotateClick}
                   style={{
                     position: 'absolute',
                     left: elementX + elementWidth / 2 + 10, // 中心基準での右端に調整
