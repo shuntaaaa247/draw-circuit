@@ -1,3 +1,5 @@
+import type { ElementTerminalPoints } from "@/utils/stage/elementCommon";
+
 type Project = {
   id: number;
   name: string;
@@ -31,4 +33,4 @@ type ConnectionInfo = {
   connectionLineId?: string;
 }
 
-export type { Project, CircuitElement, NewProjectInput, ConnectionInfo }
+export type { Project, CircuitElement, NewProjectInput, ConnectionInfo, ElementTerminalPoints }

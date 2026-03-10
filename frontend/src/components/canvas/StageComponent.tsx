@@ -10,9 +10,9 @@ import DCPowerSupplyComponent from "./DCPowerSupplyComponent";
 import CapacitorComponent from "./CapacitorComponent";
 import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
-import { Project, CircuitElement, ConnectionInfo } from "@/types";
-import { addConnectionInfo, getElementConnectionLines, trackConnectionLine, updateConnectionLinePoints } from "../../utils/stage/connectionLine";
-import { getTerminalPoints } from "@/utils/stage/elementCommon";
+import { Project, CircuitElement, ConnectionInfo, ElementTerminalPoints } from "@/types";
+import { addConnectionInfo, getElementConnectionLines, trackConnectionLine } from "../../utils/stage/connectionLine";
+import { getElementTerminalPoints, getTerminalPairsBetweenElements } from "@/utils/stage/elementCommon";
 
 export default function StageComponent({ project }: { project: Project }) {
   const pathname = usePathname();
@@ -187,10 +187,9 @@ export default function StageComponent({ project }: { project: Project }) {
       },
     });
 
-    resistance.attrs.terminalPoints = () => {
-      return getTerminalPoints(resistance);
+    resistance.attrs.terminalPoints = (): ElementTerminalPoints => {
+      return getElementTerminalPoints(resistance);
     }
-
     setResistances(prevResistances => [...prevResistances, resistance]);
     return resistance;
   }
@@ -238,8 +237,8 @@ export default function StageComponent({ project }: { project: Project }) {
       },
     });
 
-    dcPowerSupply.attrs.terminalPoints = () => {
-      return getTerminalPoints(dcPowerSupply);
+    dcPowerSupply.attrs.terminalPoints = (): ElementTerminalPoints => {
+      return getElementTerminalPoints(dcPowerSupply);
     }
 
     setDcPowerSupplies(prevDcPowerSupplies => [...prevDcPowerSupplies, dcPowerSupply]);
@@ -265,8 +264,8 @@ export default function StageComponent({ project }: { project: Project }) {
       },
     });
 
-    capacitor.attrs.terminalPoints = () => {
-      return getTerminalPoints(capacitor);
+    capacitor.attrs.terminalPoints = (): ElementTerminalPoints => {
+      return getElementTerminalPoints(capacitor);
     }
 
     setCapacitors(prevCapacitors => [...prevCapacitors, capacitor]);
@@ -292,8 +291,8 @@ export default function StageComponent({ project }: { project: Project }) {
       },
     });
 
-    inductor.attrs.terminalPoints = () => {
-      return getTerminalPoints(inductor);
+    inductor.attrs.terminalPoints = (): ElementTerminalPoints  => {
+      return getElementTerminalPoints(inductor);
     }
 
     setInductors(prevInductors => [...prevInductors, inductor]);
@@ -307,33 +306,34 @@ export default function StageComponent({ project }: { project: Project }) {
     // console.log("接続線を追加します")
     setConnectionLineCounter(prevConnectionLineCounter => prevConnectionLineCounter + 1);
 
-    const elementATerminalPoints = elementA.attrs.terminalPoints();
-    const elementBTerminalPoints = elementB.attrs.terminalPoints();
+    const terminalPairsBetweenElements = getTerminalPairsBetweenElements(elementA, elementB);
+    console.log("terminalPairsBetweenElements:", terminalPairsBetweenElements)
+
     const points = !elementA.attrs.x || !elementA.attrs.y || !elementB.attrs.x || !elementB.attrs.y 
       ? [0, 0, 0, 0] 
-      : [
-        elementATerminalPoints[1].x,
-        elementATerminalPoints[1].y,
-        elementBTerminalPoints[0].x,
-        elementBTerminalPoints[0].y
-      ]
-    
+      : terminalPairsBetweenElements[0].endPoints // インデックス0は最短距離のターミナルペアの座標が入っている(現状はとりあえず最短距離で繋ぐ)
     const connectionLine = new Konva.Line({
       points: points,
-
       id: preDefinedConnectionLineId ? preDefinedConnectionLineId : `connectionLine-${connectionLineCounter + 1}`,
       rotation: 0,
-      pairElementInfo: {
-        elementA: {
-          id: elementA.id(),
-          terminal: elementA.attrs.properties.connectionInfos[0].myTerminal,
-        },
-        elementB: {
-          id: elementB.id(),
-          terminal: elementB.attrs.properties.connectionInfos[0].myTerminal,
-        }
-      },
     });
+
+    const elementAConnectionInfos = elementA.attrs.properties.connectionInfos;
+    const elementBConnectionInfos = elementB.attrs.properties.connectionInfos;
+
+    connectionLine.attrs.pairElementInfo = {
+      elementA: {
+        id: elementA.id(),
+        terminal: elementAConnectionInfos[elementAConnectionInfos.length - 1].myTerminal, // connectionLineを削除したときに、このインデックスで正しく動作するか要検証！
+      },
+      elementB: {
+        id: elementB.id(),
+        terminal: elementBConnectionInfos[elementBConnectionInfos.length - 1].myTerminal, // connectionLineを削除したときに、このインデックスで正しく動作するか要検証！
+      }
+    }
+
+    console.log("connectionLine in addConnectionLine: ", connectionLine);
+
     setConnectionLines(prevConnectionLines => [...prevConnectionLines, connectionLine]);
     return connectionLine;
   }
@@ -408,24 +408,28 @@ export default function StageComponent({ project }: { project: Project }) {
       // 回転させた要素elementの接続線の座標を1本ずつ更新する
       elementConnectionLines.forEach((connectionLine) => {
         // 接続線の両端に接続した要素elementA,elementBを取得
-        const elementA = connectionLine.attrs.pairElementInfo?.elementA;
-        const elementB = connectionLine.attrs.pairElementInfo?.elementB;
-        if (!elementA || !elementB) return;
+        const elementAConnectionInfo = connectionLine.attrs.pairElementInfo?.elementA;
+        const elementBConnectionInfo = connectionLine.attrs.pairElementInfo?.elementB;
+        console.log("elementAConnectionInfo", elementAConnectionInfo);
+        console.log("elementBConnectionInfo", elementBConnectionInfo);
+
+        if (!elementAConnectionInfo || !elementBConnectionInfo) return;
 
         const allElements = getAllElements();
-        const _elementA = allElements.find((_element) => _element.id() === elementA.id);
-        const _elementB = allElements.find((_element) => _element.id() === elementB.id);
-        if (!_elementA || !_elementB) return;
+        const elementA = allElements.find((element) => element.id() === elementAConnectionInfo.id);
+        const elementB = allElements.find((element) => element.id() === elementBConnectionInfo.id);
 
-        const elementATerminalPoints = _elementA.attrs.terminalPoints();
-        const elementBTerminalPoints = _elementB.attrs.terminalPoints();
+        if (!elementA || !elementB || !(elementA instanceof Konva.Group) || !(elementB instanceof Konva.Group)) return;
+
+        const elementATerminalPoints = elementA.attrs.terminalPoints();
+        const elementBTerminalPoints = elementB.attrs.terminalPoints();
 
         connectionLine.points(
           [
-            elementATerminalPoints[1].x,
-            elementATerminalPoints[1].y,
-            elementBTerminalPoints[0].x,
-            elementBTerminalPoints[0].y
+            elementATerminalPoints[elementAConnectionInfo.terminal === 0 ? 0 : 1].x,
+            elementATerminalPoints[elementAConnectionInfo.terminal === 0 ? 0 : 1].y,
+            elementBTerminalPoints[elementBConnectionInfo.terminal === 0 ? 0 : 1].x,
+            elementBTerminalPoints[elementBConnectionInfo.terminal === 0 ? 0 : 1].y
           ]
         )
       })
@@ -545,20 +549,23 @@ export default function StageComponent({ project }: { project: Project }) {
       if (elementType === "dcPowerSupply") {
         elementType = "dc_power_supply"
       }
+      if (elementType === "connectionLine") {
+        elementType = "connection_line"
+      }
       return {
         element_type: elementType,
         // x_position: element.attrs.x,
         // y_position: element.attrs.y,
-        x_position: elementType === "line" ? null : element.attrs.x,
-        y_position: elementType === "line" ? null : element.attrs.y,
+        x_position: (elementType === "line" || elementType === "connection_line" || !(element instanceof Konva.Group)) ? null : element.attrs.x,
+        y_position: (elementType === "line" || elementType === "connection_line" || !(element instanceof Konva.Group)) ? null : element.attrs.y,
         // start_x_position: elementType === "line" ? element.attrs.points[0] : null,
         // start_y_position: elementType === "line" ? element.attrs.points[1] : null,
         // end_x_position: elementType === "line" ? element.attrs.points[2] : null,
         // end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
-        start_x_position: elementType === "line" ? element.attrs.points[0] + (element.attrs.x ? element.attrs.x : 0) : null,
-        start_y_position: elementType === "line" ? element.attrs.points[1] + (element.attrs.y ? element.attrs.y : 0) : null,
-        end_x_position: elementType === "line" ? element.attrs.points[2] + (element.attrs.x ? element.attrs.x : 0) : null,
-        end_y_position: elementType === "line" ? element.attrs.points[3] + (element.attrs.y ? element.attrs.y : 0) : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
+        start_x_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[0] + (element.attrs.x ? element.attrs.x : 0) : null,
+        start_y_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[1] + (element.attrs.y ? element.attrs.y : 0) : null,
+        end_x_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[2] + (element.attrs.x ? element.attrs.x : 0) : null,
+        end_y_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[3] + (element.attrs.y ? element.attrs.y : 0) : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
         width: element.width(),
         height: element.height(),
         rotation: element.rotation(),
@@ -610,6 +617,9 @@ export default function StageComponent({ project }: { project: Project }) {
       if (elementType === "dcPowerSupply") {
         elementType = "dc_power_supply"
       }
+      if (elementType === "connectionLine") {
+        elementType = "connection_line"
+      }
       return {
         element_type: elementType,
         x_position: element.attrs.x,
@@ -618,10 +628,10 @@ export default function StageComponent({ project }: { project: Project }) {
         // start_y_position: elementType === "line" ? element.attrs.points[1] : null,
         // end_x_position: elementType === "line" ? element.attrs.points[2] : null,
         // end_y_position: elementType === "line" ? element.attrs.points[3] : null, // 線の場合は4つの座標が必要なので、3つ目と4つ目は0にする
-        start_x_position: elementType === "line" ? element.attrs.points[0] + (element.attrs.x ? element.attrs.x : 0) : null,
-        start_y_position: elementType === "line" ? element.attrs.points[1] + (element.attrs.y ? element.attrs.y : 0) : null,
-        end_x_position: elementType === "line" ? element.attrs.points[2] + (element.attrs.x ? element.attrs.x : 0) : null,
-        end_y_position: elementType === "line" ? element.attrs.points[3] + (element.attrs.y ? element.attrs.y : 0) : null,
+        start_x_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[0] + (element.attrs.x ? element.attrs.x : 0) : undefined,
+        start_y_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[1] + (element.attrs.y ? element.attrs.y : 0) : undefined,
+        end_x_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[2] + (element.attrs.x ? element.attrs.x : 0) : undefined,
+        end_y_position: ((elementType === "line" || elementType === "connection_line") && element instanceof Konva.Line) ? element.attrs.points[3] + (element.attrs.y ? element.attrs.y : 0) : undefined,
         width: element.width(),
         height: element.height(),
         rotation: element.rotation(),

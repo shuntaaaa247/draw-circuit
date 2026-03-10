@@ -2,6 +2,7 @@
 
 import Konva from "konva";
 import { ConnectionInfo } from "../../types/index";
+import { getTerminalPairsBetweenElements } from "./elementCommon";
 
 // 追加する接続線の情報を接続先の要素に追加する
 export const addConnectionInfo = (
@@ -9,13 +10,19 @@ export const addConnectionInfo = (
   elementB: Konva.Group, 
   connectionLineId: string
 ) => {
+
+  // 接続線が最短距離となるelementA, elementBのターミナルを取得
+  const terminalPairsBetweenElements = getTerminalPairsBetweenElements(elementA, elementB);
+  const elementATerminal = terminalPairsBetweenElements[0].elementA.terminal
+  const elementBTerminal = terminalPairsBetweenElements[0].elementB.terminal
+
   // 接続情報を素子に保存する
   const elementAConnectionInfos: ConnectionInfo[] = elementA.attrs.properties.connectionInfos || [];
-  elementAConnectionInfos.push({pairElementId: elementB.id(), myTerminal: 1, pairTerminal: 0, connectionLineId: connectionLineId}); // とりあえず、myTerminalは1、pairTerminalは0にしている
+  elementAConnectionInfos.push({pairElementId: elementB.id(), myTerminal: elementATerminal, pairTerminal: elementBTerminal, connectionLineId: connectionLineId}); // とりあえず、myTerminalは1、pairTerminalは0にしている
   elementA.setAttrs({properties: {...elementA.attrs.properties, connectionInfos: elementAConnectionInfos}});
 
   const elementBConnectionInfos: ConnectionInfo[] = elementB.attrs.properties.connectionInfos || [];
-  elementBConnectionInfos.push({pairElementId: elementA.id(), myTerminal: 0, pairTerminal: 1, connectionLineId: connectionLineId}); // とりあえず、myTerminalは0、pairTerminalは1にしている
+  elementBConnectionInfos.push({pairElementId: elementA.id(), myTerminal: elementBTerminal, pairTerminal: elementATerminal, connectionLineId: connectionLineId}); // とりあえず、myTerminalは0、pairTerminalは1にしている
   elementB.setAttrs({properties: {...elementB.attrs.properties, connectionInfos: elementBConnectionInfos}});
 }
 
@@ -44,7 +51,7 @@ export const trackConnectionLine = (elementsToMove: (Konva.Group | Konva.Line)[]
   const updatedBetweenConnectionLineIds = new Set<string>(); // 接続線の両端の素子が選択されている場合に、接続線の座標がすでに更新されているかどうかをチェックするフラグとして利用する
 
   elementsToMove.forEach((element) => {
-    if(element.attrs.properties?.connectionInfos) {
+    if(element instanceof Konva.Group && element.attrs.properties?.connectionInfos) {
       element.attrs.properties.connectionInfos.forEach((connectionInfo: ConnectionInfo) => {
         const connectionLineId = connectionInfo.connectionLineId;
         if (!connectionLineId) return;
