@@ -1,4 +1,5 @@
 import Konva from "konva";
+import { getConnectionLinePairElements } from "./connectionLine";
 
 // 線と接続線以外の要素のターミナル2点の座標を返す
 export type ElementTerminalPoints = {
@@ -59,8 +60,6 @@ export const getTerminalPairsBetweenElements = (elementA: Konva.Group, elementB:
         (elementATerminalPoints[i === 0 ? 0 : 1].y - elementBTerminalPoints[j === 0 ? 0 : 1].y)
       );
 
-      console.log("でお")
-
       terminalPairs.push({
         elementA: {
           id: elementA.id(),
@@ -91,4 +90,19 @@ export const getTerminalPairsBetweenElements = (elementA: Konva.Group, elementB:
 
   console.log("sorted:", sortedTerminalPairs)
   return sortedTerminalPairs;
+}
+
+export const removeConnectionInfo = (connectionLine: Konva.Line, allElementsExceptLines: (Konva.Group)[]) => {
+  const connectionLinePairElements = getConnectionLinePairElements(connectionLine, allElementsExceptLines);
+  if (!connectionLinePairElements) return;
+
+  const elementA = connectionLinePairElements.elementA;
+  const elementB = connectionLinePairElements.elementB;
+  const pairElementInfo = connectionLinePairElements.pairElementInfo;
+
+  const elementAConnectionInfos = elementA.attrs.properties.connectionInfos;
+  const elementBConnectionInfos = elementB.attrs.properties.connectionInfos;
+
+  elementA.attrs.properties.connectionInfos = elementAConnectionInfos.filter((connectionInfo) => connectionInfo.connectionLineId !== connectionLine.id());
+  elementB.attrs.properties.connectionInfos = elementBConnectionInfos.filter((connectionInfo) => connectionInfo.connectionLineId !== connectionLine.id());
 }

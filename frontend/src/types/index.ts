@@ -33,4 +33,15 @@ type ConnectionInfo = {
   connectionLineId?: string;
 }
 
-export type { Project, CircuitElement, NewProjectInput, ConnectionInfo, ElementTerminalPoints }
+type PairElementInfo = {
+  elementA: {
+    id: string,
+    terminal: number
+  }, 
+  elementB: {
+    id: string,
+    terminal: number
+  }
+}
+
+export type { Project, CircuitElement, NewProjectInput, ConnectionInfo, PairElementInfo, ElementTerminalPoints }

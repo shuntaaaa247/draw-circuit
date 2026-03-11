@@ -1,7 +1,7 @@
 // connectionLineの自動追従機能を切り出したが、一旦保留
 
 import Konva from "konva";
-import { ConnectionInfo } from "../../types/index";
+import { ConnectionInfo, PairElementInfo } from "../../types/index";
 import { getTerminalPairsBetweenElements } from "./elementCommon";
 
 // 追加する接続線の情報を接続先の要素に追加する
@@ -62,7 +62,6 @@ export const trackConnectionLine = (elementsToMove: (Konva.Group | Konva.Line)[]
         const connectionLine = connectionLines.find((connectionLine) => connectionLineId === connectionLine.id());
 
         if (!connectionLine) return;
-        console.log("追従するconnectionLine:", connectionLine.id())
 
         const elementAId = connectionLine.attrs.pairElementInfo?.elementA.id; // 接続線の片方の要素のid
         const elementBId = connectionLine.attrs.pairElementInfo?.elementB.id; // 接続線のもう片方の要素のid
@@ -86,6 +85,30 @@ export const trackConnectionLine = (elementsToMove: (Konva.Group | Konva.Line)[]
       });
     }
   });
+}
+
+export const getConnectionLinePairElements = (connectionLine: Konva.Line, allElementsExceptLines: (Konva.Group)[]): {
+  elementA: Konva.Group,
+  elementB: Konva.Group,
+  pairElementInfo: PairElementInfo
+} | undefined => {
+  const pairElementInfo = connectionLine.attrs.pairElementInfo;
+  if (!pairElementInfo) return undefined;
+
+  const elementAConnectionInfo = pairElementInfo.elementA;
+  const elementBConnectionInfo = pairElementInfo.elementB;
+  if (!elementAConnectionInfo || !elementBConnectionInfo) return undefined;
+
+  const elementA = allElementsExceptLines.find((element) => element.id() === elementAConnectionInfo.id);
+  const elementB = allElementsExceptLines.find((element) => element.id() === elementBConnectionInfo.id);
+
+  if (!elementA || !elementB) return undefined;
+
+  return {
+    elementA,
+    elementB,
+    pairElementInfo
+  }
 }
 
 // ↓旧版

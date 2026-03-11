@@ -12,7 +12,7 @@ import InductorComponent from "./InductorComponent";
 import LineComponent from "./LineComponent";
 import { Project, CircuitElement, ConnectionInfo, ElementTerminalPoints } from "@/types";
 import { addConnectionInfo, getElementConnectionLines, trackConnectionLine } from "../../utils/stage/connectionLine";
-import { getElementTerminalPoints, getTerminalPairsBetweenElements } from "@/utils/stage/elementCommon";
+import { getElementTerminalPoints, getTerminalPairsBetweenElements, removeConnectionInfo } from "@/utils/stage/elementCommon";
 
 export default function StageComponent({ project }: { project: Project }) {
   const pathname = usePathname();
@@ -103,6 +103,17 @@ export default function StageComponent({ project }: { project: Project }) {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // バックスペースが押された場合は、選択された要素を削除
     if (e.key === "Backspace") {
+
+      // connectionLineが選択され、それを削除するときは、接続された両端の素子のconnectionInfosから該当のconnectionLineの情報を削除する
+      const allElementsExceptLines = getAllElementsExceptLines();
+      selectedIds.forEach((selectedId) => {
+        if (selectedId.includes("connectionLine")) {
+          const connectionLine = connectionLines.find((connectionLine) => connectionLine.id() === selectedId);
+          if (!connectionLine) return;
+          removeConnectionInfo(connectionLine, allElementsExceptLines);
+        }
+      })
+
       // 選択された要素を各配列から削除
       setResistances(prevResistances => prevResistances.filter((resistance) => !selectedIds.includes(resistance.id())));
       setDcPowerSupplies(prevDcPowerSupplies => prevDcPowerSupplies.filter((dcPowerSupply) => !selectedIds.includes(dcPowerSupply.id())));
@@ -342,6 +353,10 @@ export default function StageComponent({ project }: { project: Project }) {
     return [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors, ...lines, ...connectionLines];
   }
 
+  const getAllElementsExceptLines = () => {
+    return [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors];
+  }
+
   const handleClick = (id: string, event: Konva.KonvaEventObject<MouseEvent>, element?: Konva.Group | Konva.Line) => {
     
     // ただクリックした場合は選択状態の要素をクリックされた要素のみにする
@@ -408,6 +423,7 @@ export default function StageComponent({ project }: { project: Project }) {
       // 回転させた要素elementの接続線の座標を1本ずつ更新する
       elementConnectionLines.forEach((connectionLine) => {
         // 接続線の両端に接続した要素elementA,elementBを取得
+        // ここを関数化したものを使うことを検討！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
         const elementAConnectionInfo = connectionLine.attrs.pairElementInfo?.elementA;
         const elementBConnectionInfo = connectionLine.attrs.pairElementInfo?.elementB;
         console.log("elementAConnectionInfo", elementAConnectionInfo);
@@ -451,8 +467,6 @@ export default function StageComponent({ project }: { project: Project }) {
     if (isDraggingLineControlPoint.current) {
       return;
     }
-
-    console.log("あああ")
 
     const draggedElement = event.target;
     
@@ -751,14 +765,14 @@ export default function StageComponent({ project }: { project: Project }) {
   };
 
   const handleConnectClick = () => {
-    const selectedElementsOtherThanLines = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors].filter(element => selectedIds.includes(element.id()));
+    const selectedElementsExceptLines = [...resistances, ...dcPowerSupplies, ...capacitors, ...inductors].filter(element => selectedIds.includes(element.id()));
 
     // 選択されている要素が2個の時のみ接続を許可する
-    if (selectedElementsOtherThanLines.length !== 2) return;
+    if (selectedElementsExceptLines.length !== 2) return;
 
     // 接続先の要素を2つ取得する
-    const elementA = selectedElementsOtherThanLines[0];
-    const elementB = selectedElementsOtherThanLines[1];
+    const elementA = selectedElementsExceptLines[0];
+    const elementB = selectedElementsExceptLines[1];
 
     // 便宜上事前に接続線のidを決めておく
     const predefinedConnectionLineId = `connectionLine-${connectionLineCounter + 1}`;

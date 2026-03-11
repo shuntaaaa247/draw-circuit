@@ -1,4 +1,5 @@
 import 'konva/lib/shapes/Line'
+import { PairElementInfo } from '.'
 
 declare module 'konva/lib/shapes/Line' {
   interface Line {
@@ -7,16 +8,7 @@ declare module 'konva/lib/shapes/Line' {
       points: number[],
       x: number,
       y: number,
-      pairElementInfo: {
-        elementA: {
-          id: string;
-          terminal: number;
-        };
-        elementB: {
-          id: string;
-          terminal: number;
-        };
-      };
+      pairElementInfo: PairElementInfo
     }
   }
 }
