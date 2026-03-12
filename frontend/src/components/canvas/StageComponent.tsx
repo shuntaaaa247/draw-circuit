@@ -104,23 +104,43 @@ export default function StageComponent({ project }: { project: Project }) {
     // バックスペースが押された場合は、選択された要素を削除
     if (e.key === "Backspace") {
 
-      // connectionLineが選択され、それを削除するときは、接続された両端の素子のconnectionInfosから該当のconnectionLineの情報を削除する
+      // 線、接続線以外の素子を全て取得する（以下の接続関係の削除等の処理に用いる）
       const allElementsExceptLines = getAllElementsExceptLines();
+      // 削除するべき素子のidが入る配列
+      const elementIdsToRemove = selectedIds;
+
+      // 線以外の素子が選択され、それが削除されるときは、その素子に接続された線も削除する
       selectedIds.forEach((selectedId) => {
-        if (selectedId.includes("connectionLine")) {
-          const connectionLine = connectionLines.find((connectionLine) => connectionLine.id() === selectedId);
+        if (selectedId.includes("line-") || selectedId.includes("connectionLine-")) return;
+        
+        // 選択中の素子の実態elementを取り出す
+        const element = allElementsExceptLines.find((element) => element.id() === selectedId);
+        if (!element) return;
+
+        // 選択中の素子elementに接続した接続線を全て取得
+        const connectionLineConnectedToElement = getElementConnectionLines(element, connectionLines);
+        // 取得した接続線全てをelementと同時に削除するため、接続線のidを削除用の素子が入る配列に入れる。
+        connectionLineConnectedToElement.forEach((connectionLine) => {
+          elementIdsToRemove.push(connectionLine.id())
+        })
+      })
+
+      // connectionLineが選択(もしくは上でelementIdsToRemoveに追加)され、それを削除するときは、接続された両端の素子のconnectionInfosから該当のconnectionLineの情報を削除する
+      elementIdsToRemove.forEach((elementId) => {
+        if (elementId.includes("connectionLine")) {
+          const connectionLine = connectionLines.find((connectionLine) => connectionLine.id() === elementId);
           if (!connectionLine) return;
           removeConnectionInfo(connectionLine, allElementsExceptLines);
         }
       })
 
       // 選択された要素を各配列から削除
-      setResistances(prevResistances => prevResistances.filter((resistance) => !selectedIds.includes(resistance.id())));
-      setDcPowerSupplies(prevDcPowerSupplies => prevDcPowerSupplies.filter((dcPowerSupply) => !selectedIds.includes(dcPowerSupply.id())));
-      setCapacitors(prevCapacitors => prevCapacitors.filter((capacitor) => !selectedIds.includes(capacitor.id())));
-      setInductors(prevInductors => prevInductors.filter((inductor) => !selectedIds.includes(inductor.id())));
-      setLines(prevLines => prevLines.filter((line) => !selectedIds.includes(line.id())));
-      setConnectionLines(prevConnectionLines => prevConnectionLines.filter((connectionLine) => !selectedIds.includes(connectionLine.id())));
+      setResistances(prevResistances => prevResistances.filter((resistance) => !elementIdsToRemove.includes(resistance.id())));
+      setDcPowerSupplies(prevDcPowerSupplies => prevDcPowerSupplies.filter((dcPowerSupply) => !elementIdsToRemove.includes(dcPowerSupply.id())));
+      setCapacitors(prevCapacitors => prevCapacitors.filter((capacitor) => !elementIdsToRemove.includes(capacitor.id())));
+      setInductors(prevInductors => prevInductors.filter((inductor) => !elementIdsToRemove.includes(inductor.id())));
+      setLines(prevLines => prevLines.filter((line) => !elementIdsToRemove.includes(line.id())));
+      setConnectionLines(prevConnectionLines => prevConnectionLines.filter((connectionLine) => !elementIdsToRemove.includes(connectionLine.id())));
       setSelectedIds([]);
     }
 
